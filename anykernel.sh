@@ -220,26 +220,11 @@ patch_fstab() {
 ## end methods
 
 
+###########################
+###########################
+###########################
+## begin installation
 
-## AnyKernel permissions
-# set permissions for included files
-#chmod -R 755 $ramdisk
-#chmod 644 $ramdisk/res/synapse/*
-#chmod -R 755 $ramdisk/res/synapse/actions
-
-## AnyKernel install
-#dump_boot;
-
-# begin ramdisk changes
-
-# init.tuna.rc
-#append_file init.tuna.rc "/sbin/uci" init.tuna;
-
-# end ramdisk changes
-
-#write_boot;
-
-## end install
 ui_print " ";
 ui_print "[#] Erasing /cust (nothing but junk here)...";
 mount /cust
