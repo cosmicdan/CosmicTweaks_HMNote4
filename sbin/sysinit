@@ -14,7 +14,7 @@ fi
 chmod -R 755 /system/etc/init.d/*
 
 for FILE in /system/etc/init.d/*; do
-   /system/bin/sh $FILE
+   /system/bin/sh $FILE &
 done;
 
 mount -o remount,ro /system
