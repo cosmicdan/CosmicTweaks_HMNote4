@@ -245,6 +245,9 @@ do
 	fi
 done
 unset i
+# remove broken su applets. We delete these instead of skipping link so old users can upgrade and get the fix
+if [ -L su ]; then rm su; fi
+if [ -L sulogin ]; then rm sulogin; fi
 
 ui_print "    [#] Adding common system users and groups..."
 unzip -o "$BBZIP" addusergroup.sh
