@@ -300,7 +300,42 @@ replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name
 ui_print "    [i] Disabled dm-verity (aka verified boot)";
 replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
 ui_print "    [i] Disabled forced userdata encryption";
+# remove old broken init.d
+remove_section init.rc "# init.d" "    oneshot"
+rm /system/xbin/sysinit;
 append_file init.rc "# init.d" init.rc___additions
+cp /tmp/anykernel/sbin/* sbin/
+chmod 777 sbin/*
+echo "sepolicy-inject -z sysinit"
+$bin/sepolicy-inject -z sysinit -P sepolicy
+echo "sepolicy-inject -Z sysinit"
+$bin/sepolicy-inject -Z sysinit -P sepolicy
+
+echo "sepolicy-inject -s init -t sysinit [...]"
+$bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
+$bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
+$bin/sepolicy-inject -s init -t sysinit -c process -p siginh -P sepolicy
+$bin/sepolicy-inject -s init -t sysinit -c process -p noatsecure -P sepolicy
+
+echo "sepolicy-inject -s sysinit -t sysinit [...]"
+$bin/sepolicy-inject -s sysinit -t sysinit -c dir -p search,read -P sepolicy
+$bin/sepolicy-inject -s sysinit -t sysinit -c file -p read,write,open -P sepolicy
+$bin/sepolicy-inject -s sysinit -t sysinit -c unix_dgram_socket -p create,connect,write,setopt -P sepolicy
+$bin/sepolicy-inject -s sysinit -t sysinit -c lnk_file -p read -P sepolicy
+$bin/sepolicy-inject -s sysinit -t sysinit -c process -p fork,sigchld -P sepolicy
+$bin/sepolicy-inject -s sysinit -t sysinit -c capability -p dac_override -P sepolicy
+
+echo "sepolicy-inject -s sysinit -t [other-domains] ..."
+$bin/sepolicy-inject -s sysinit -t system_file -c file -p entrypoint,execute_no_trans -P sepolicy
+$bin/sepolicy-inject -s sysinit -t devpts -c chr_file -p read,write,open,getattr,ioctl -P sepolicy
+$bin/sepolicy-inject -s sysinit -t rootfs -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+$bin/sepolicy-inject -s sysinit -t shell_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+$bin/sepolicy-inject -s sysinit -t zygote_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+$bin/sepolicy-inject -s sysinit -t toolbox_exec -c file -p getattr,open,read,ioctl,lock,getattr,execute,execute_no_trans,entrypoint -P sepolicy
+
+echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
+$bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
+
 ui_print "    [i] Added init.d support";
 ui_print "[#] Writing kernel with patched RAMDisk...";
 write_boot;

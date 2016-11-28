@@ -1,6 +1,11 @@
-
 # init.d
-service sysinit /system/xbin/sysinit
-    class main
+on property:sys.boot_completed=1
+    start sysinit
+
+service sysinit /system/bin/logwrapper /sbin/sysinit
+    class late_start
+    seclabel u:r:sysinit:s0
     user root
+    group root
+    disabled
     oneshot

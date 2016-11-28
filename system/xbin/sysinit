@@ -1,9 +1,0 @@
-#!/system/bin/sh
-
-mount -o remount,rw /system
-
-export PATH=${PATH}:/system/bin:/system/xbin
-chmod 777 /system/etc/init.d/*
-logwrapper busybox run-parts /system/etc/init.d/
-
-mount -o remount,ro /system
