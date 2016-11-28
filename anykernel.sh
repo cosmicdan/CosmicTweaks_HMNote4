@@ -290,7 +290,7 @@ remove_section init.rc "# init.d" "    oneshot"
 rm /system/xbin/sysinit;
 append_file init.rc "# init.d" init.rc___additions
 cp /tmp/anykernel/sbin/* sbin/
-chmod 777 sbin/*
+chmod 755 sbin/*
 echo "sepolicy-inject -z sysinit"
 $bin/sepolicy-inject -z sysinit -P sepolicy
 echo "sepolicy-inject -Z sysinit"
