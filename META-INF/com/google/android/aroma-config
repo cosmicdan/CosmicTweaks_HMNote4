@@ -1,0 +1,46 @@
+ini_set("rom_name",             "CosmicTweaks");
+ini_set("rom_version",          "2016.11.29");
+ini_set("rom_author",           "CosmicDan");
+ini_set("rom_device",           "HMNote4");
+
+
+
+theme("miui");
+
+fontresload( "0", "ttf/Roboto-Regular.ttf", "12" );
+fontresload( "1", "ttf/Roboto-Regular.ttf", "14" );
+
+#textbox(
+#    "Changelog",
+#    "",
+#    "@update",
+#    resread("changelog.txt")
+#);
+
+
+gotolabel("start");
+
+############
+## Main menu
+############
+menubox(
+    ini_get("rom_name"),
+    "Version " + ini_get("rom_version") + " for " + ini_get("rom_device"),
+    "@apps",
+    # saved at /tmp/aroma/choice_main.prop
+    "choice_main.prop",
+    "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",         #-- selected = 1
+    "Configure ADB",            "Change Boot-time ADB / Security level",                "@personalize"      #-- selected = 2
+);
+
+ini_set("text_next", "Finish");
+ini_set("icon_next", "@finish");
+setvar("retstatus",
+    install(
+        "Installing",
+        "<b>"+ini_get("rom_name")+"</b> is performing the requested task(s).\n\n"+
+        "This may take a minute.",
+        "@install",
+        "Finished!\nBe sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log)."
+    )
+);

@@ -2,13 +2,6 @@
 # osm0sis @ xda-developers
 
 ## AnyKernel setup
-# EDIFY properties
-kernel.string=MIUI8 CosmicTweaks
-do.devicecheck=1
-do.initd=0
-do.modules=0
-do.cleanup=1
-device1=nikel
 
 # shell variables
 block=/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/boot;
@@ -31,8 +24,13 @@ OUTFD=/proc/self/fd/$1;
 # ui_print <text>
 ui_print() { echo -e "ui_print $1\nui_print" > $OUTFD; }
 
+show_progress() { echo "progress $1 $2" > $OUTFD; }
+set_progress() { echo "set_progress $1" > $OUTFD; }
+
 # contains <string> <substring>
 contains() { test "${1#*$2}" != "$1" && return 0 || return 1; }
+
+file_getprop() { grep "^$2" "$1" | cut -d= -f2; }
 
 # dump boot and extract ramdisk
 dump_boot() {
@@ -219,108 +217,119 @@ patch_fstab() {
 
 ## end methods
 
-
 ###########################
 ###########################
 ###########################
 ## begin installation
 
 ui_print " ";
-ui_print "[#] Erasing /cust (nothing but junk here)...";
-mount /cust
-rm -rf /cust/*
-umount /cust
 
-ui_print "[#] /system removals...";
-rm -rf /system/data-app/*;
-ui_print "    [i] Erased Chinese bloat at /system/data-app/*";
-rm /system/bin/install-recovery.sh;
-rm /system/recovery-from-boot.p;
-ui_print "    [i] Deleted stock recovery patch & script";
-rm -rf /system/app/AnalyticsCore;
-ui_print "    [i] Removed app/AnalyticsCore (Phone-home backdoor app)";
-rm -rf /system/app/AutoTest;
-ui_print "    [i] Removed app/AutoTest (Engineering diagnostics)";
-rm -rf /system/app/SogouInput;
-ui_print "    [i] Removed app/SogouInput (Chinese IME)";
-rm -rf /system/app/Whetstone
-ui_print "    [i] Removed Whetstone (appkiller)";
-rm -rf /system/app/AMAPNetworkLocation;
-# Removing causes security alert
-#rm -rf /system/app/GameCenter;
-rm -rf /system/app/jjcontainer;
-rm -rf /system/app/jjhome;
-rm -rf /system/app/jjknowledge;
-rm -rf /system/app/jjstore;
-rm -rf /system/app/mab;
-rm -rf /system/app/MiLivetalk;
-rm -rf /system/app/Mipay;
-# Can't disable MiuiSuperMarket 
-#rm -rf /system/app/MiuiSuperMarket;
-# Removing causes security alert
-#rm -rf /system/app/MiuiVideo
-rm -rf /system/app/PaymentService;
-rm -rf /system/app/SelfRegister;
-rm -rf /system/app/SystemAdSolution;
-rm -rf /system/app/VoiceAssist;
-rm -rf /system/app/XiaomiVip;
-rm -rf /system/app/XMPass;
-rm -rf /system/priv-app/MiuiVoip;
-rm -rf /system/priv-app/VirtualSim;
-rm -rf /system/priv-app/YellowPage;
-ui_print "    [i] Removed various Chinese-only services";
-ui_print "[#] /system patches...";
-replace_line /system/etc/device_features/$device1.xml "    <bool name=\"support_ota_validate\">true</bool>" "    <bool name=\"support_ota_validate\">false</bool>"
-ui_print "    [i] Disabled OTA app ZIP validation";
-replace_file /system/etc/install_app_filter.xml 644 install_app_filter.xml___replacement;
-ui_print "    [i] Remove Chinese carrier app selection";
-sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop
-append_file /system/build.prop "# CosmicDan Additionals 01 " build.prop___additions;
-ui_print "    [i] build.prop replacements/additions";
-ui_print "[#] Extracting kernel...";
-dump_boot;
-ui_print "[#] Patching RAMDisk...";
-# change these to fstab functions
-replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait,verify" "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait"
-ui_print "    [i] Disabled dm-verity (aka verified boot)";
-replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
-ui_print "    [i] Disabled forced userdata encryption";
-# remove old broken init.d
-remove_section init.rc "# init.d" "    oneshot"
-rm /system/xbin/sysinit;
-append_file init.rc "# init.d" init.rc___additions
-cp /tmp/anykernel/sbin/* sbin/
-chmod 755 sbin/*
-echo "sepolicy-inject -z sysinit"
-$bin/sepolicy-inject -z sysinit -P sepolicy
-echo "sepolicy-inject -Z sysinit"
-$bin/sepolicy-inject -Z sysinit -P sepolicy
+export choice_main=`file_getprop /tmp/aroma/choice_main.prop selected`;
 
-echo "sepolicy-inject -s init -t sysinit [...]"
-$bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
-$bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
-$bin/sepolicy-inject -s init -t sysinit -c process -p siginh -P sepolicy
-$bin/sepolicy-inject -s init -t sysinit -c process -p noatsecure -P sepolicy
+if [ "$choice_main" == "1" ]; then
+    show_progress "0.2" "-1200"
 
-echo "sepolicy-inject -s sysinit -t sysinit [...]"
-$bin/sepolicy-inject -s sysinit -t sysinit -c dir -p search,read -P sepolicy
-$bin/sepolicy-inject -s sysinit -t sysinit -c file -p read,write,open -P sepolicy
-$bin/sepolicy-inject -s sysinit -t sysinit -c unix_dgram_socket -p create,connect,write,setopt -P sepolicy
-$bin/sepolicy-inject -s sysinit -t sysinit -c lnk_file -p read -P sepolicy
-$bin/sepolicy-inject -s sysinit -t sysinit -c process -p fork,sigchld -P sepolicy
-$bin/sepolicy-inject -s sysinit -t sysinit -c capability -p dac_override -P sepolicy
+    ui_print "[#] Erasing /cust (nothing but junk here)...";
+    mount /cust
+    rm -rf /cust/*
+    umount /cust
 
-echo "sepolicy-inject -s sysinit -t [other-domains] ..."
-$bin/sepolicy-inject -s sysinit -t system_file -c file -p entrypoint,execute_no_trans -P sepolicy
-$bin/sepolicy-inject -s sysinit -t devpts -c chr_file -p read,write,open,getattr,ioctl -P sepolicy
-$bin/sepolicy-inject -s sysinit -t rootfs -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-$bin/sepolicy-inject -s sysinit -t shell_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-$bin/sepolicy-inject -s sysinit -t zygote_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-$bin/sepolicy-inject -s sysinit -t toolbox_exec -c file -p getattr,open,read,ioctl,lock,getattr,execute,execute_no_trans,entrypoint -P sepolicy
+    ui_print "[#] /system removals...";
+    rm -rf /system/data-app/*;
+    ui_print "    [i] Erased Chinese bloat at /system/data-app/*";
+    rm /system/bin/install-recovery.sh;
+    rm /system/recovery-from-boot.p;
+    ui_print "    [i] Deleted stock recovery patch & script";
+    rm -rf /system/app/AnalyticsCore;
+    ui_print "    [i] Removed app/AnalyticsCore (Phone-home backdoor app)";
+    rm -rf /system/app/AutoTest;
+    ui_print "    [i] Removed app/AutoTest (Engineering diagnostics)";
+    rm -rf /system/app/SogouInput;
+    ui_print "    [i] Removed app/SogouInput (Chinese IME)";
+    rm -rf /system/app/Whetstone
+    ui_print "    [i] Removed Whetstone (appkiller)";
+    rm -rf /system/app/AMAPNetworkLocation;
+    # Removing causes security alert
+    #rm -rf /system/app/GameCenter;
+    rm -rf /system/app/jjcontainer;
+    rm -rf /system/app/jjhome;
+    rm -rf /system/app/jjknowledge;
+    rm -rf /system/app/jjstore;
+    rm -rf /system/app/mab;
+    rm -rf /system/app/MiLivetalk;
+    rm -rf /system/app/Mipay;
+    # Can't disable MiuiSuperMarket 
+    #rm -rf /system/app/MiuiSuperMarket;
+    # Removing causes security alert
+    #rm -rf /system/app/MiuiVideo
+    rm -rf /system/app/PaymentService;
+    rm -rf /system/app/SelfRegister;
+    rm -rf /system/app/SystemAdSolution;
+    rm -rf /system/app/VoiceAssist;
+    rm -rf /system/app/XiaomiVip;
+    rm -rf /system/app/XMPass;
+    rm -rf /system/priv-app/MiuiVoip;
+    rm -rf /system/priv-app/VirtualSim;
+    rm -rf /system/priv-app/YellowPage;
+    ui_print "    [i] Removed various Chinese-only services";
+    ui_print "[#] /system patches...";
+    replace_line /system/etc/device_features/$device1.xml "    <bool name=\"support_ota_validate\">true</bool>" "    <bool name=\"support_ota_validate\">false</bool>"
+    ui_print "    [i] Disabled OTA app ZIP validation";
+    replace_file /system/etc/install_app_filter.xml 644 install_app_filter.xml___replacement;
+    ui_print "    [i] Remove Chinese carrier app selection";
+    sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop > /dev/null 2>&1
+    append_file /system/build.prop "# CosmicDan Additionals 01 " build.prop___additions;
+    ui_print "    [i] build.prop replacements/additions";
+    ui_print "[#] Extracting kernel...";
+    dump_boot;
+    ui_print "[#] Patching RAMDisk...";
+    # change these to fstab functions
+    replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait,verify" "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait"
+    ui_print "    [i] Disabled dm-verity (aka verified boot)";
+    replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
+    ui_print "    [i] Disabled forced userdata encryption";
+    # remove old broken init.d
+    remove_section init.rc "# init.d" "    oneshot"
+    rm /system/xbin/sysinit;
+    append_file init.rc "# init.d" init.rc___additions
+    cp /tmp/anykernel/sbin/* sbin/
+    chmod 755 sbin/*
+    echo "sepolicy-inject -z sysinit"
+    $bin/sepolicy-inject -z sysinit -P sepolicy
+    echo "sepolicy-inject -Z sysinit"
+    $bin/sepolicy-inject -Z sysinit -P sepolicy
 
-echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
-$bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
+    echo "sepolicy-inject -s init -t sysinit [...]"
+    $bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p siginh -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p noatsecure -P sepolicy
 
-ui_print "    [i] Added init.d support";
-ui_print "[#] Writing kernel with patched RAMDisk...";
-write_boot;
+    echo "sepolicy-inject -s sysinit -t sysinit [...]"
+    $bin/sepolicy-inject -s sysinit -t sysinit -c dir -p search,read -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c file -p read,write,open -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c unix_dgram_socket -p create,connect,write,setopt -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c lnk_file -p read -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c process -p fork,sigchld -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c capability -p dac_override -P sepolicy
+
+    echo "sepolicy-inject -s sysinit -t [other-domains] ..."
+    $bin/sepolicy-inject -s sysinit -t system_file -c file -p entrypoint,execute_no_trans -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t devpts -c chr_file -p read,write,open,getattr,ioctl -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t rootfs -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t shell_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t zygote_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t toolbox_exec -c file -p getattr,open,read,ioctl,lock,getattr,execute,execute_no_trans,entrypoint -P sepolicy
+
+    echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
+    $bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
+
+    ui_print "    [i] Added init.d support";
+    ui_print "[#] Writing kernel with patched RAMDisk...";
+    show_progress "0.2" "-1500"
+    write_boot;
+fi;
+
+if [ "$choice_main" == "2" ]; then
+    ui_print "[i] TODO";
+fi;
