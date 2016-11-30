@@ -142,6 +142,8 @@ umount /data;
 ui_print " ";
 ui_print "[i] Done!";
 ui_print " ";
+ui_print "Thanks to icons8.com for Installer icons";
+ui_print " ";
 ui_print "Be sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log).";
 set_progress "1.0"
 

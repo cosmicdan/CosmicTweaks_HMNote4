@@ -37,8 +37,8 @@ color.textfg_gray     = #666666
 color.controlbg       = #ececec
 color.controlbg_g     = #bdbdbd
 color.controlfg       = #222222
-color.selectbg        = #fead20
-color.selectbg_g      = #dc7d0c
+color.selectbg        = #1f73ff
+color.selectbg_g      = #0c69dc
 color.selectfg        = #ffffff
 color.titlebg         = #3b3b3b
 color.titlebg_g       = #1a1a1a
@@ -46,12 +46,12 @@ color.titlefg         = #ffffff
 color.dlgtitlebg      = #3b3b3b
 color.dlgtitlebg_g    = #1a1a1a
 color.dlgtitlefg      = #ffffff
-color.scrollbar       = #f0b000
+color.scrollbar       = #0044f0
 color.navbg           = #e6e6e6
 color.navbg_g         = #c5c5c5
 color.border          = #dddddd
 color.border_g        = #cccccc
-color.progressglow    = #fead20
+color.progressglow    = #1f73ff
 
 
 config.roundsize             = 2
