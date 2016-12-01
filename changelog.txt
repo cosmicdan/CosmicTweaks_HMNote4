@@ -1,0 +1,15 @@
+<b>2016.12.xx</b>
+
+<*>New - QuickSearchBox translation/globalize overlay</*>
+<*>New - Init.d script - Clear icon cache every boot (useful for Unicon)</*>
+<*>New - Aroma Installer</*>
+    <*>Add Insecure ADB On Boot option</*>
+    <*>Add Restore function (uninstall ComsicTweaks)</*>
+<*>Fix - Init.d scripts shouldn't block flow control</*>
+
+
+
+<b>2016.11.26</b>
+
+<*>Initial release</*>
+<*>Based on China Stable 8.1.3.0</*>
