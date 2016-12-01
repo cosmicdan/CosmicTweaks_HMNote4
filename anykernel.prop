@@ -1,6 +1,3 @@
-kernel.string=MIUI8 CosmicTweaks
-do.devicecheck=1
-do.initd=0
-do.modules=0
-do.cleanup=1
+name=CosmicTweaks
+version=2016.11.29
 device1=nikel

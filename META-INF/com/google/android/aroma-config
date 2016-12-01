@@ -1,7 +1,12 @@
-ini_set("rom_name",             "CosmicTweaks");
-ini_set("rom_version",          "2016.11.29");
+ini_set("force_colorspace","rgba");
+
+ziptotmp("anykernel.prop", "anykernel.prop");
+ziptotmp("changelog.txt", "changelog.txt");
+
+ini_set("rom_name",             file_getprop("/tmp/aroma/anykernel.prop","name"));
+ini_set("rom_version",          file_getprop("/tmp/aroma/anykernel.prop","version"));
 ini_set("rom_author",           "CosmicDan");
-ini_set("rom_device",           "HMNote4");
+ini_set("rom_device",           file_getprop("/tmp/aroma/anykernel.prop","device1"));
 
 
 
@@ -10,15 +15,23 @@ theme("miui");
 fontresload( "0", "ttf/Roboto-Regular.ttf", "12" );
 fontresload( "1", "ttf/Roboto-Regular.ttf", "14" );
 
-#textbox(
-#    "Changelog",
-#    "",
-#    "@update",
-#    resread("changelog.txt")
-#);
+setvar("is_device_valid", resexec("is_device_valid.sh"));
+if (getvar("is_device_valid")=="0") then
+    ini_set("text_next", "Exit");
+    ini_set("icon_next", "");
+    textbox(
+        "Error",
+        "Wrong device",
+        "@install",
+        "You're attempting to install this ZIP on an unsupported device. Sorry!"
+    );
+    exit("");;
+endif;
 
 
 gotolabel("start");
+ini_set("text_next", "Next");
+ini_set("icon_next", "@next");
 
 ############
 ## Main menu
@@ -26,21 +39,202 @@ gotolabel("start");
 menubox(
     ini_get("rom_name"),
     "Version " + ini_get("rom_version") + " for " + ini_get("rom_device"),
-    "@apps",
-    # saved at /tmp/aroma/choice_main.prop
+    "@home",
     "choice_main.prop",
-    "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",         #-- selected = 1
-    "Configure ADB",            "Change Boot-time ADB / Security level",                "@personalize"      #-- selected = 2
+    "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",
+    "Restore",                  "Undo CosmicTweaks customization",                      "@undo",
+    "Configure ADB",            "Change Boot-time ADB / Security level",                "@adb",
+    "Changelog",                "View changelog for this version",                      "@changelog",
+    "Exit",                     "Exit and return to Recovery",                          "@exit"
 );
 
-ini_set("text_next", "Finish");
-ini_set("icon_next", "@finish");
+
+
+#########
+## Install
+#########
+if prop("choice_main.prop","selected")=="1" then
+    ini_set("text_next", "Install  ");
+    ini_set("icon_next", "@install");
+    textbox(
+        "Install",
+        "Ready to install",
+        "@install",
+        "I've got enough information, ready to apply CosmicTweaks!"
+    );
+endif;
+
+
+
+#########
+## Restore
+#########
+if prop("choice_main.prop","selected")=="2" then
+
+    #pleasewait("Checking for backup...");
+    #setvar("does_backup_exist", resexec("does_backup_exist.sh"));
+    
+    #if (getvar("does_backup_exist")=="0") then
+        ini_set("text_next", "Return  ");
+        ini_set("icon_next", "@home");
+        textbox(
+            "Restore",
+            "Undo CosmicTweaks customization",
+            "@undo",
+            #"No backup was found at /system/cosmictweaks_backup/.\n\n\nPress Return to go back to the main menu."
+            "Not yet implemented."
+        );
+        goto("start");
+    #endif;
+    
+    #if (getvar("does_backup_exist")=="1") then
+    #    ini_set("text_next", "Restore  ");
+    #    ini_set("icon_next", "@undo");
+    #    textbox(
+    #        "Restore",
+    #        "Undo CosmicTweaks customization",
+    #        "@undo",
+    #        "A backup was found. Press Restore to restore the originals of all files that were changed or removed by CosmicTweaks."
+    #    );
+    #endif;
+endif;
+
+
+
+#########
+## Configure ADB
+#########
+if prop("choice_main.prop","selected")=="3" then
+    # cheap check if cosmictweaks is installed
+    setvar("does_backup_exist", resexec("does_backup_exist.sh"));
+    
+    #if (getvar("does_backup_exist")=="0") then
+    #    alert("Insecure ADB","CosmicTweaks does not yet appear to be installed.\n\nIf you want to install a root-enabled ADBD, please go back and install CosmicTweaks first.\n\nOtherwise, you can continue to install insecure ADB - however it will not be root-enabled (e.g. unable to perform commands like 'adb root' or 'adb remount').", "@adb");
+    #endif;
+    
+    form(
+        "Configure ADB",
+        "Change Boot-time ADB / Security level",
+        "@adb",
+        "choice_adb.prop",
+        "install",      "Insecure ADB On Boot",     "Modify the kernel to enable an insecure ADB on boot",      "select.selected",
+        "restore",      "Restore",                  "Restore original secure and non-boot ADB functionality",   "select"
+    );
+    
+    #########
+    ## Install
+    #########
+    if prop("choice_adb.prop","root")=="install" then
+        #########
+        ## Root-mode choice
+        #########
+        setvar("adb_rootmode_text", "<#999>Unavailable</#> <i>(Requires base tweaks to be installed first)</i>");
+        setvar("adb_ready_footer_text", "<#900><b>Notice!</b></#> ADB on boot is a security risk - be sure to restore secure and non-boot ADB functionality once you no longer have a need for it.");
+        if (getvar("does_backup_exist")=="1") then
+            
+            checkviewbox(
+                "Root-mode ADBD",
+                "Thanks to the CosmicTweaks SEPolicy patches and my own modified ADBD binary, we have the possibility to use a root-mode ADBD binary.\n\n\n" +
+                  "Root-mode ADBD allows some more advanced capabilities like:\n" +
+                  "<*>`adb shell` will immediately put the user into a root shell,</*>"+
+                  "<*>`adb remount` as a shortcut to remount /system as rw,</*>"+
+                  "<*>`adb push` can push files directly to /system (assuming it's already mounted rw)</*>"+"\n\n\n"+
+                  "Note that root-mode ADBD is a developer/debug tool that is usually hard-disabled on user builds of Android - <i>I had to compile a hacked adbd binary to provide this functionality</i>. This is because <b>root-mode ADBD is a massive security risk.</b>\n\n"+
+                  "Please only enable if you are an experienced user.",
+                "@adb",
+                "Enable root-mode ADBD?",
+                "0",
+                "rootmode_adb"
+            );
+            
+            #form(
+            #    "Configure ADB",
+            #    "Change Boot-time ADB / Security level",
+            #    "@adb",
+            #    "choice_adb_rootmode.prop",
+            #    "enabled",      "Root-mode ADBD?",      "Thanks to the CosmicTweaks SEPolicy patches and my own modified ADBD binary, we have the possibility to use a root-mode ADBD binary.\n\nUsing root-mode ADBD provides the following:\n " + 
+            #  , "check"
+            #);
+            #if prop("choice_adb_rootmode.prop","enabled")=="1" then
+            if getvar("rootmode_adb") == "1" then
+                writetmpfile("choice_adb_rootmode.prop","enabled=1\n");
+                setvar("adb_rootmode_text", "<#c00>Enabled</#>");
+                setvar("adb_ready_footer_text", getvar("adb_ready_footer_text") + "\n\n<#c00><b>WARNING!</b></#> Root-mode ADBD is an advanced/developer function and a MAJOR security risk. I hope you know what you're doing!");
+            else
+                writetmpfile("choice_adb_rootmode.prop","enabled=0\n");
+                setvar("adb_rootmode_text", "<#0c0>Disabled</#>");
+            endif;
+        #else
+        #    setvar("adb_ready_footer_text", "<i>Root-mode ADBD is unavailable as it requires the CosmicTweaks base to be installed first.</i>\n\n" + getvar("adb_ready_footer_text"));
+        endif;
+        
+        #########
+        ## Confirm/disclaimer
+        #########
+        ini_set("text_next", "Install  ");
+        ini_set("icon_next", "@install");
+        textbox(
+            "Install",
+            "Ready to install Insecure ADB On Boot",
+            "@install",
+            "I've got enough information, ready to apply Insecure ADB On Boot!" + 
+              "\n\n\n" +
+              "<b>User selections:</b>\n" + 
+              "    <*> Root-mode ADBD = " + getvar("adb_rootmode_text") + "</*>" +
+              "\n\n\n" + 
+              getvar("adb_ready_footer_text")
+        );
+    endif;
+    
+    #########
+    ## Remove
+    #########
+    if prop("choice_adb.prop","root")=="restore" then
+        #########
+        ## Confirm
+        #########
+        ini_set("text_next", "Restore  ");
+        ini_set("icon_next", "@undo");
+        textbox(
+            "Restore",
+            "Ready to restore ADB functionality",
+            "@restore",
+            "I've got enough information, ready to restore secure and non-boot ADB functionality!"
+        );
+    endif
+endif;
+
+#########
+## Changelog
+#########
+if prop("choice_main.prop","selected")=="4" then
+    ini_set("text_next", "Return  ");
+    ini_set("icon_next", "@home");
+    textbox(
+        "Changelog",
+        "Changelog up to current version (" + ini_get("rom_version") + ")",
+        "@changelog",
+        read("/tmp/aroma/changelog.txt")
+    );
+    goto("start");
+endif;
+
+#########
+## Exit
+#########
+if prop("choice_main.prop","selected")=="5" then
+    exit("");
+endif;
+
+ini_set("text_next", "Return  ");
+ini_set("icon_next", "@home");
 setvar("retstatus",
     install(
         "Installing",
         "<b>"+ini_get("rom_name")+"</b> is performing the requested task(s).\n\n"+
         "This may take a minute.",
         "@install",
-        "Finished!\nBe sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log)."
+        "Done!\nBe sure to select 'Save Logs' in case you need to report a bug (this will overwrite any previous log made by this update ZIP)."
     )
 );
+goto("start");

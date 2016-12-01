@@ -226,6 +226,131 @@ ui_print " ";
 
 export choice_main=`file_getprop /tmp/aroma/choice_main.prop selected`;
 
+ui_print "[#] Extracting kernel...";
+show_progress "0.2" "-1500";
+dump_boot;
+ui_print "[#] Patching RAMDisk...";
+
+############
+## Install (kernel tasks)
+############
+if [ "$choice_main" == "1" ]; then
+    # TODO: change these to fstab functions
+    replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait,verify" "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait"
+    ui_print "    [i] Disabled dm-verity (aka verified boot)";
+    replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
+    ui_print "    [i] Disabled forced userdata encryption";
+    # remove old broken init.d
+    remove_section init.rc "# init.d" "    oneshot"
+    rm /system/xbin/sysinit;
+    append_file init.rc "# init.d" init.rc___additions
+    cp /tmp/anykernel/sbin/* sbin/
+    chmod 755 sbin/*
+    echo "sepolicy-inject -z sysinit"
+    $bin/sepolicy-inject -z sysinit -P sepolicy
+    echo "sepolicy-inject -Z sysinit"
+    $bin/sepolicy-inject -Z sysinit -P sepolicy
+
+    echo "sepolicy-inject -s init -t sysinit [...]"
+    $bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p siginh -P sepolicy
+    $bin/sepolicy-inject -s init -t sysinit -c process -p noatsecure -P sepolicy
+
+    echo "sepolicy-inject -s sysinit -t sysinit [...]"
+    $bin/sepolicy-inject -s sysinit -t sysinit -c dir -p search,read -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c file -p read,write,open -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c unix_dgram_socket -p create,connect,write,setopt -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c lnk_file -p read -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c process -p fork,sigchld -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t sysinit -c capability -p dac_override -P sepolicy
+
+    echo "sepolicy-inject -s sysinit -t [other-domains] ..."
+    $bin/sepolicy-inject -s sysinit -t system_file -c file -p entrypoint,execute_no_trans -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t devpts -c chr_file -p read,write,open,getattr,ioctl -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t rootfs -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t shell_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t zygote_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
+    $bin/sepolicy-inject -s sysinit -t toolbox_exec -c file -p getattr,open,read,ioctl,lock,getattr,execute,execute_no_trans,entrypoint -P sepolicy
+
+    echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
+    $bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
+
+    ui_print "    [i] Added init.d support";
+fi;
+
+
+
+############
+## Restore (kernel tasks)
+############
+if [ "$choice_main" == "2" ]; then
+    # TODO
+    ui_print " ";
+fi;
+
+
+
+############
+## ADB (kernel tasks)
+############
+if [ "$choice_main" == "3" ]; then
+    if [ "$(file_getprop /tmp/aroma/choice_adb.prop root)" == "install" ]; then
+        ui_print "[#] Set Insecure ADB On Boot...";
+        export devicelock_newval="0";
+        export secure_newval="0";
+        export debuggable_newval="1";
+        export usb_newval="adb";
+        
+        if [ -f /data/property/persist.sys.usb.config ]; then
+            rm /data/property/persist.sys.usb.config
+        fi;
+        
+        # root-mode adbd
+        if [ -f sbin/sysinit ]; then
+            if [ "$(file_getprop /tmp/aroma/choice_adb_rootmode.prop enabled)" == "1" ]; then
+                ui_print "    [#] Inject root-mode ADBD binary...";
+                insert_line init.rc "# adbd patch start" before "seclabel u:r:adbd:s0" "    # adbd patch start"
+                insert_line init.rc "# adbd patch end" after "seclabel u:r:adbd:s0" "    # adbd patch end"
+                replace_line init.rc "    seclabel u:r:adbd:s0" "    seclabel u:r:sysinit:s0"
+                cp -f /tmp/anykernel/adbd/insecure sbin/adbd
+                chmod 755 sbin/*
+            fi;
+        fi;
+    else
+        ui_print "[#] Restore Secure and non-boot ADB...";
+        export devicelock_newval="1";
+        export secure_newval="1";
+        export debuggable_newval="0";
+        export usb_newval="adb";
+        
+        # root-mode adbd
+        replace_section init.rc "    # adbd patch start" "    # adbd patch end" "    seclabel u:r:adbd:s0"
+        if [ ! `cmp -s "/tmp/anykernel/sbin/adbd.secure" "sbin/adbd"` ]; then
+            cp -f /tmp/anykernel/adbd/secure sbin/adbd
+            chmod 755 sbin/*
+            ui_print "    [#] Restored usermode ADBD binary";
+        fi;
+    fi;
+    replace_line default.prop "ro.secureboot.devicelock=" "ro.secureboot.devicelock=$devicelock_newval"
+    replace_line default.prop "ro.adb.secure=" "ro.adb.secure=$secure_newval"
+    replace_line default.prop "ro.secure=" "ro.secure=$secure_newval"
+    replace_line default.prop "ro.debuggable=" "ro.debuggable=$debuggable_newval"
+    replace_line default.prop "persist.sys.usb.config=" "persist.sys.usb.config=$usb_newval"
+fi;
+
+
+############
+## (finish kernel tasks)
+############
+ui_print "[#] Writing kernel with patched RAMDisk...";
+write_boot;
+
+
+
+############
+## Install (post-kernel)
+############
 if [ "$choice_main" == "1" ]; then
     show_progress "0.2" "-1200"
 
@@ -280,56 +405,35 @@ if [ "$choice_main" == "1" ]; then
     sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop > /dev/null 2>&1
     append_file /system/build.prop "# CosmicDan Additionals 01 " build.prop___additions;
     ui_print "    [i] build.prop replacements/additions";
-    ui_print "[#] Extracting kernel...";
-    dump_boot;
-    ui_print "[#] Patching RAMDisk...";
-    # change these to fstab functions
-    replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait,verify" "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait"
-    ui_print "    [i] Disabled dm-verity (aka verified boot)";
-    replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
-    ui_print "    [i] Disabled forced userdata encryption";
-    # remove old broken init.d
-    remove_section init.rc "# init.d" "    oneshot"
-    rm /system/xbin/sysinit;
-    append_file init.rc "# init.d" init.rc___additions
-    cp /tmp/anykernel/sbin/* sbin/
-    chmod 755 sbin/*
-    echo "sepolicy-inject -z sysinit"
-    $bin/sepolicy-inject -z sysinit -P sepolicy
-    echo "sepolicy-inject -Z sysinit"
-    $bin/sepolicy-inject -Z sysinit -P sepolicy
-
-    echo "sepolicy-inject -s init -t sysinit [...]"
-    $bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
-    $bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
-    $bin/sepolicy-inject -s init -t sysinit -c process -p siginh -P sepolicy
-    $bin/sepolicy-inject -s init -t sysinit -c process -p noatsecure -P sepolicy
-
-    echo "sepolicy-inject -s sysinit -t sysinit [...]"
-    $bin/sepolicy-inject -s sysinit -t sysinit -c dir -p search,read -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t sysinit -c file -p read,write,open -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t sysinit -c unix_dgram_socket -p create,connect,write,setopt -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t sysinit -c lnk_file -p read -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t sysinit -c process -p fork,sigchld -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t sysinit -c capability -p dac_override -P sepolicy
-
-    echo "sepolicy-inject -s sysinit -t [other-domains] ..."
-    $bin/sepolicy-inject -s sysinit -t system_file -c file -p entrypoint,execute_no_trans -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t devpts -c chr_file -p read,write,open,getattr,ioctl -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t rootfs -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t shell_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t zygote_exec -c file -p execute,read,open,execute_no_trans,getattr -P sepolicy
-    $bin/sepolicy-inject -s sysinit -t toolbox_exec -c file -p getattr,open,read,ioctl,lock,getattr,execute,execute_no_trans,entrypoint -P sepolicy
-
-    echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
-    $bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
-
-    ui_print "    [i] Added init.d support";
-    ui_print "[#] Writing kernel with patched RAMDisk...";
-    show_progress "0.2" "-1500"
-    write_boot;
+    
+    ui_print " ";
+    show_progress "0.2" "-1000"
+    ui_print "[#] Extracting new files to /system...";
+    unzip -o "$ZIP" "system/*" -d "/";
+    ui_print "    [#] Setting permissions...";
+    show_progress "0.2" "-7000"
+    busybox find /system/app/ -type d -exec chmod 755 {} \;
+    busybox find /system/app/ -type f -exec chmod 644 {} \;
+    chmod 755 /system/etc/init.d
+    busybox find /system/etc/init.d/ -type f -exec chmod 755 {} \;
+    chmod 755 /system/etc/preferred-apps
+    busybox find /system/etc/preferred-apps -type f -exec chmod 644 {} \;
+    chmod 755 /system/etc/sysconfig
+    busybox find /system/etc/sysconfig -type f -exec chmod 644 {} \;
+    busybox find /system/framework/ -type f -exec chmod 644 {} \;
+    busybox find /system/priv-app/ -type d -exec chmod 755 {} \;
+    busybox find /system/priv-app/ -type f -exec chmod 644 {} \;
+    busybox find /system/xbin/ -type f -exec chmod 755 {} \;
+    ui_print " ";
+    ui_print "[i] Busybox installer thanks to YashdSaraf@XDA...";
+    show_progress "0.1" "-2000"
+    PATH="/tmp/anykernel/bin:$PATH" $bb ash /tmp/anykernel/busybox_installer.sh $2 $3;
 fi;
 
+############
+## Restore (post-kernel)
+############
 if [ "$choice_main" == "2" ]; then
-    ui_print "[i] TODO";
+    # TODO
+    ui_print " ";
 fi;
