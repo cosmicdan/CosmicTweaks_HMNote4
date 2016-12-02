@@ -1,4 +1,4 @@
-# init.d
+# start init.d patch
 on property:sys.boot_completed=1
     start sysinit
 
@@ -9,3 +9,4 @@ service sysinit /system/bin/logwrapper /sbin/sysinit
     group root
     disabled
     oneshot
+# end init.d patch
