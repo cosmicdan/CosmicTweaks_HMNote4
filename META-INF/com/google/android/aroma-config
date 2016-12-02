@@ -147,15 +147,6 @@ if prop("choice_main.prop","selected")=="3" then
                 "rootmode_adb"
             );
             
-            #form(
-            #    "Configure ADB",
-            #    "Change Boot-time ADB / Security level",
-            #    "@adb",
-            #    "choice_adb_rootmode.prop",
-            #    "enabled",      "Root-mode ADBD?",      "Thanks to the CosmicTweaks SEPolicy patches and my own modified ADBD binary, we have the possibility to use a root-mode ADBD binary.\n\nUsing root-mode ADBD provides the following:\n " + 
-            #  , "check"
-            #);
-            #if prop("choice_adb_rootmode.prop","enabled")=="1" then
             if getvar("rootmode_adb") == "1" then
                 writetmpfile("choice_adb_rootmode.prop","enabled=1\n");
                 setvar("adb_rootmode_text", "<#c00>Enabled</#>");

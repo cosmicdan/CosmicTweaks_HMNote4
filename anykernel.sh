@@ -309,13 +309,15 @@ if [ "$choice_main" == "3" ]; then
         # root-mode adbd
         if [ -f sbin/sysinit ]; then
             if [ "$(file_getprop /tmp/aroma/choice_adb_rootmode.prop enabled)" == "1" ]; then
-                ui_print "    [#] Inject root-mode ADBD binary...";
                 insert_line init.rc "# adbd patch start" before "seclabel u:r:adbd:s0" "    # adbd patch start"
                 insert_line init.rc "# adbd patch end" after "seclabel u:r:adbd:s0" "    # adbd patch end"
                 replace_line init.rc "    seclabel u:r:adbd:s0" "    seclabel u:r:sysinit:s0"
                 cp -f /tmp/anykernel/adbd/insecure sbin/adbd
                 chmod 755 sbin/*
+                ui_print "    [i] Injected root-mode ADBD binary";
             fi;
+        else
+            ui_print "    <#c00>[!] Error - The /system has a CosmicTweaks backup but the kernel does not, you've flashed a stock kernel? Please reinstall CosmicTweaks!</#>";
         fi;
     else
         ui_print "[#] Restore Secure and non-boot ADB...";
@@ -326,10 +328,12 @@ if [ "$choice_main" == "3" ]; then
         
         # root-mode adbd
         replace_section init.rc "    # adbd patch start" "    # adbd patch end" "    seclabel u:r:adbd:s0"
-        if [ ! `cmp -s "/tmp/anykernel/sbin/adbd.secure" "sbin/adbd"` ]; then
+        if ! cmp -s "/tmp/anykernel/adbd/secure" "sbin/adbd"; then
             cp -f /tmp/anykernel/adbd/secure sbin/adbd
             chmod 755 sbin/*
-            ui_print "    [#] Restored usermode ADBD binary";
+            ui_print "    [i] Injected stock non-root-mode adbd binary";
+        else
+            ui_print "    [i] adbd binary is already stock";
         fi;
     fi;
     replace_line default.prop "ro.secureboot.devicelock=" "ro.secureboot.devicelock=$devicelock_newval"
