@@ -40,8 +40,8 @@ ui_print " ";
 rm -rf /tmp/anykernel; > /dev/null 2>&1
 mkdir -p /tmp/anykernel/bin;
 cd /tmp/anykernel;
-# CosmicDan - exclude system
-unzip -o "$ZIP" -x "system/*";
+# CosmicDan - extract everything from ZIP except system and system-optional
+unzip -o "$ZIP" -x "system/*" -x "system_optional/*";
 if [ $? != 0 -o -z "$(ls /tmp/anykernel/tools)" ]; then
     abort "Unzip failed. Aborting...";
 fi;
@@ -66,7 +66,7 @@ done;
 if [ $? != 0 -o -z "$(ls /tmp/anykernel/bin)" ]; then
     abort "[!] Recovery busybox setup failed. Aborting...";
 fi;
-PATH="/tmp/anykernel/bin:$PATH" $bb ash /tmp/anykernel/anykernel.sh $2;
+PATH="/tmp/anykernel/bin:$PATH" $bb ash /tmp/anykernel/anykernel.sh $2 $ZIP;
 if [ $? != "0" ]; then
     abort;
 fi;
@@ -80,8 +80,10 @@ umount /data;
 ui_print " ";
 ui_print "[i] Done!";
 ui_print " ";
-ui_print "Thanks to icons8.com for Installer icons";
+ui_print "Credits and thanks :";
+ui_print " - Xiaomi.eu community for some translated/globalized resources";
+ui_print " - icons8.com for Aroma icons";
 ui_print " ";
-ui_print "Be sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log).";
+ui_print "<#009>Be sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log).</#>";
 set_progress "1.0"
 

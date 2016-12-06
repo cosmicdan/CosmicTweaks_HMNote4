@@ -28,6 +28,21 @@ if (getvar("is_device_valid")=="0") then
     exit("");;
 endif;
 
+resexec("mount_system.sh");
+
+if (file_getprop("/system/build.prop", "ro.miui.cust_variant") == "eu") then
+    setvar("romtypestring", "Xiaomi.eu");
+    setvar("iseurom", true);
+else
+    # TODO: Distinguish between global/china later maybe?
+    setvar("romtypestring", "Official Global/China");
+    setvar("iseurom", false);
+endif;
+
+setvar("romversion", file_getprop("/system/build.prop", "ro.build.version.incremental"));
+
+# self-reminder in case I ever want a 'dynamic menu' type thing
+# eval(read("/tmp/other_aroma_script.edify"));
 
 gotolabel("start");
 ini_set("text_next", "Next");
@@ -37,12 +52,13 @@ ini_set("icon_next", "@next");
 ## Main menu
 ############
 menubox(
-    ini_get("rom_name"),
-    "Version " + ini_get("rom_version") + " for " + ini_get("rom_device"),
+    "Welcome to " + ini_get("rom_name") + "!",
+    "CosmicTweaks <b>" + ini_get("rom_version") + "</b> for " + ini_get("rom_device") + "\n" +
+    "Detected ROM: <b>" + getvar("romtypestring") + "</b>\n" +
+    "Detected version: <b>" + getvar("romversion") + "</b>",
     "@home",
     "choice_main.prop",
     "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",
-    "Restore",                  "Undo CosmicTweaks customization",                      "@undo",
     "Configure ADB",            "Change Boot-time ADB / Security level",                "@adb",
     "Changelog",                "View changelog for this version",                      "@changelog",
     "Exit",                     "Exit and return to Recovery",                          "@exit"
@@ -54,6 +70,7 @@ menubox(
 ## Install
 #########
 if prop("choice_main.prop","selected")=="1" then
+
     ini_set("text_next", "Install  ");
     ini_set("icon_next", "@install");
     textbox(
@@ -65,53 +82,10 @@ if prop("choice_main.prop","selected")=="1" then
 endif;
 
 
-
-#########
-## Restore
-#########
-if prop("choice_main.prop","selected")=="2" then
-
-    #pleasewait("Checking for backup...");
-    #setvar("does_backup_exist", resexec("does_backup_exist.sh"));
-    
-    #if (getvar("does_backup_exist")=="0") then
-        ini_set("text_next", "Return  ");
-        ini_set("icon_next", "@home");
-        textbox(
-            "Restore",
-            "Undo CosmicTweaks customization",
-            "@undo",
-            #"No backup was found at /system/cosmictweaks_backup/.\n\n\nPress Return to go back to the main menu."
-            "Not yet implemented."
-        );
-        goto("start");
-    #endif;
-    
-    #if (getvar("does_backup_exist")=="1") then
-    #    ini_set("text_next", "Restore  ");
-    #    ini_set("icon_next", "@undo");
-    #    textbox(
-    #        "Restore",
-    #        "Undo CosmicTweaks customization",
-    #        "@undo",
-    #        "A backup was found. Press Restore to restore the originals of all files that were changed or removed by CosmicTweaks."
-    #    );
-    #endif;
-endif;
-
-
-
 #########
 ## Configure ADB
 #########
-if prop("choice_main.prop","selected")=="3" then
-    # cheap check if cosmictweaks is installed
-    setvar("does_backup_exist", resexec("does_backup_exist.sh"));
-    
-    #if (getvar("does_backup_exist")=="0") then
-    #    alert("Insecure ADB","CosmicTweaks does not yet appear to be installed.\n\nIf you want to install a root-enabled ADBD, please go back and install CosmicTweaks first.\n\nOtherwise, you can continue to install insecure ADB - however it will not be root-enabled (e.g. unable to perform commands like 'adb root' or 'adb remount').", "@adb");
-    #endif;
-    
+if prop("choice_main.prop","selected")=="2" then
     form(
         "Configure ADB",
         "Change Boot-time ADB / Security level",
@@ -130,8 +104,8 @@ if prop("choice_main.prop","selected")=="3" then
         #########
         setvar("adb_rootmode_text", "<#999>Unavailable</#> <i>(Requires base tweaks to be installed first)</i>");
         setvar("adb_ready_footer_text", "<#900><b>Notice!</b></#> ADB on boot is a security risk - be sure to restore secure and non-boot ADB functionality once you no longer have a need for it.");
-        if (getvar("does_backup_exist")=="1") then
-            
+        
+        if (file_getprop("/system/build.prop", "ro.cosmictweaks.sysinitcapable") == "true") then
             checkviewbox(
                 "Root-mode ADBD",
                 "Thanks to the CosmicTweaks SEPolicy patches and my own modified ADBD binary, we have the possibility to use a root-mode ADBD binary.\n\n\n" +
@@ -198,7 +172,7 @@ endif;
 #########
 ## Changelog
 #########
-if prop("choice_main.prop","selected")=="4" then
+if prop("choice_main.prop","selected")=="3" then
     ini_set("text_next", "Return  ");
     ini_set("icon_next", "@home");
     textbox(
@@ -213,7 +187,7 @@ endif;
 #########
 ## Exit
 #########
-if prop("choice_main.prop","selected")=="5" then
+if prop("choice_main.prop","selected")=="4" then
     exit("");
 endif;
 

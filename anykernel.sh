@@ -20,6 +20,7 @@ chmod -R 755 $bin;
 mkdir -p $ramdisk $split_img;
 
 OUTFD=/proc/self/fd/$1;
+ZIP="$2";
 
 # ui_print <text>
 ui_print() { echo -e "ui_print $1\nui_print" > $OUTFD; }
@@ -103,9 +104,6 @@ write_boot() {
   dd if=/tmp/anykernel/boot-new.img of=$block;
 }
 
-# backup_file <file>
-backup_file() { cp $1 $1~; }
-
 # replace_string <file> <if search string> <original string> <replacement string>
 replace_string() {
   if [ -z "$(grep "$2" $1)" ]; then
@@ -127,13 +125,15 @@ replace_section() {
 
 # remove_section <file> <begin search string> <end search string>
 remove_section() {
-  begin=`grep -n "$2" $1 | head -n1 | cut -d: -f1`;
-  for end in `grep -n "$3" $1 | cut -d: -f1`; do
-    if [ "$begin" -lt "$end" ]; then
-      sed -i "/${2//\//\\/}/,/${3//\//\\/}/d" $1;
-      break;
-    fi;
-  done;
+    begin=`grep -n "$2" $1 | head -n1 | cut -d: -f1`;
+    for end in `grep -n "$3" $1 | cut -d: -f1`; do
+        if [ "$begin" -lt "$end" ] 2>/dev/null; then
+            sed -i "/${2//\//\\/}/,/${3//\//\\/}/d" $1;
+            #break;
+            return 0;
+        fi;
+    done;
+    return 1;
 }
 
 # insert_line <file> <if search string> <before|after> <line match string> <inserted line>
@@ -225,6 +225,7 @@ patch_fstab() {
 ui_print " ";
 
 export choice_main=`file_getprop /tmp/aroma/choice_main.prop selected`;
+export device1=`file_getprop /tmp/anykernel/anykernel.prop device1`;
 
 ui_print "[#] Extracting kernel...";
 show_progress "0.2" "-1500";
@@ -235,22 +236,24 @@ ui_print "[#] Patching RAMDisk...";
 ## Install (kernel tasks)
 ############
 if [ "$choice_main" == "1" ]; then
-    # TODO: change these to fstab functions
-    replace_line fstab.mt6797 "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait,verify" "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system /system ext4 ro wait"
+    patch_fstab fstab.mt6797 /system ext4 flags "wait,verify" "wait";
     ui_print "    [i] Disabled dm-verity (aka verified boot)";
     replace_string fstab.mt6797 "encryptable=" "forceencrypt=" "encryptable="
-    ui_print "    [i] Disabled forced userdata encryption";
+    ui_print "    [i] Disabled forced encryption";
     # remove old broken init.d
     remove_section init.rc "# init.d" "    oneshot"
-    rm /system/xbin/sysinit;
+    if [ -f "/system/xbin/sysinit" ]; then
+        # upgrade from old versions
+        rm /system/xbin/sysinit;
+    fi;
     append_file init.rc "# init.d" init.rc___additions
     cp /tmp/anykernel/sbin/* sbin/
     chmod 755 sbin/*
+    ui_print "    [#] Injecting sepolicy with init.d-related permissions...";
     echo "sepolicy-inject -z sysinit"
     $bin/sepolicy-inject -z sysinit -P sepolicy
     echo "sepolicy-inject -Z sysinit"
     $bin/sepolicy-inject -Z sysinit -P sepolicy
-
     echo "sepolicy-inject -s init -t sysinit [...]"
     $bin/sepolicy-inject -s init -t sysinit -c process -p transition -P sepolicy
     $bin/sepolicy-inject -s init -t sysinit -c process -p rlimitinh -P sepolicy
@@ -276,27 +279,16 @@ if [ "$choice_main" == "1" ]; then
     echo "sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy"
     $bin/sepolicy-inject -a mlstrustedsubject -s sysinit -P sepolicy
 
-    ui_print "    [i] Added init.d support";
+    ui_print "        ...done.";
 fi;
-
-
-
-############
-## Restore (kernel tasks)
-############
-if [ "$choice_main" == "2" ]; then
-    # TODO
-    ui_print " ";
-fi;
-
 
 
 ############
 ## ADB (kernel tasks)
 ############
-if [ "$choice_main" == "3" ]; then
+if [ "$choice_main" == "2" ]; then
     if [ "$(file_getprop /tmp/aroma/choice_adb.prop root)" == "install" ]; then
-        ui_print "[#] Set Insecure ADB On Boot...";
+        ui_print "    [#] Set Insecure ADB On Boot...";
         export devicelock_newval="0";
         export secure_newval="0";
         export debuggable_newval="1";
@@ -314,13 +306,13 @@ if [ "$choice_main" == "3" ]; then
                 replace_line init.rc "    seclabel u:r:adbd:s0" "    seclabel u:r:sysinit:s0"
                 cp -f /tmp/anykernel/adbd/insecure sbin/adbd
                 chmod 755 sbin/*
-                ui_print "    [i] Injected root-mode ADBD binary";
+                ui_print "        [i] Injected root-mode ADBD binary";
             fi;
         else
-            ui_print "    <#c00>[!] Error - The /system has a CosmicTweaks backup but the kernel does not, you've flashed a stock kernel? Please reinstall CosmicTweaks!</#>";
+            ui_print "        <#c00>[!] Error - The /system has CosmicTweaks but the kernel is not modded. You've flashed a stock kernel? Please reinstall CosmicTweaks!</#>";
         fi;
     else
-        ui_print "[#] Restore Secure and non-boot ADB...";
+        ui_print "    [#] Restore Secure and non-boot ADB...";
         export devicelock_newval="1";
         export secure_newval="1";
         export debuggable_newval="0";
@@ -331,9 +323,9 @@ if [ "$choice_main" == "3" ]; then
         if ! cmp -s "/tmp/anykernel/adbd/secure" "sbin/adbd"; then
             cp -f /tmp/anykernel/adbd/secure sbin/adbd
             chmod 755 sbin/*
-            ui_print "    [i] Injected stock non-root-mode adbd binary";
+            ui_print "        [i] Injected stock non-root-mode adbd binary";
         else
-            ui_print "    [i] adbd binary is already stock";
+            ui_print "        [i] adbd binary is already stock";
         fi;
     fi;
     replace_line default.prop "ro.secureboot.devicelock=" "ro.secureboot.devicelock=$devicelock_newval"
@@ -350,7 +342,9 @@ fi;
 ui_print "[#] Writing kernel with patched RAMDisk...";
 write_boot;
 
-
+move_file() {
+    echo "$1"
+}
 
 ############
 ## Install (post-kernel)
@@ -358,86 +352,119 @@ write_boot;
 if [ "$choice_main" == "1" ]; then
     show_progress "0.2" "-1200"
 
-    ui_print "[#] Erasing /cust (nothing but junk here)...";
+    ui_print "[#] /cust tasks...";
     mount /cust
+    # TODO: options
     rm -rf /cust/*
     umount /cust
+    ui_print "    [i] /cust wiped";
 
     ui_print "[#] /system removals...";
-    rm -rf /system/data-app/*;
-    ui_print "    [i] Erased Chinese bloat at /system/data-app/*";
-    rm /system/bin/install-recovery.sh;
-    rm /system/recovery-from-boot.p;
-    ui_print "    [i] Deleted stock recovery patch & script";
-    rm -rf /system/app/AnalyticsCore;
-    ui_print "    [i] Removed app/AnalyticsCore (Phone-home backdoor app)";
-    rm -rf /system/app/AutoTest;
-    ui_print "    [i] Removed app/AutoTest (Engineering diagnostics)";
-    rm -rf /system/app/SogouInput;
-    ui_print "    [i] Removed app/SogouInput (Chinese IME)";
-    rm -rf /system/app/Whetstone
-    ui_print "    [i] Removed Whetstone (appkiller)";
+    # TODO: options
+    if [ -d "/system/data-app" ]; then
+        rm -rf "/system/data-app/*";
+        ui_print "    [i] Deleted pre-install bloat from /system/data-app/";
+    else
+        ui_print "    [i] Pre-install bloat at /system/data-app/ already deleted";
+    fi;
+    
+    if [ -f "/system/bin/install-recovery.sh" -o -f "/system/recovery-from-boot.p" ]; then
+        rm /system/bin/install-recovery.sh;
+        rm /system/recovery-from-boot.p;
+        ui_print "    [i] Deleted stock recovery patch/script";
+    else
+        ui_print "    [i] Stock recovery patch/script not present";
+    fi;
+    
+    # TODO: options
     rm -rf /system/app/AMAPNetworkLocation;
-    # Removing causes security alert
-    #rm -rf /system/app/GameCenter;
-    rm -rf /system/app/jjcontainer;
-    rm -rf /system/app/jjhome;
-    rm -rf /system/app/jjknowledge;
-    rm -rf /system/app/jjstore;
-    rm -rf /system/app/mab;
-    rm -rf /system/app/MiLivetalk;
-    rm -rf /system/app/Mipay;
-    # Can't disable MiuiSuperMarket 
-    #rm -rf /system/app/MiuiSuperMarket;
-    # Removing causes security alert
-    #rm -rf /system/app/MiuiVideo
-    rm -rf /system/app/PaymentService;
-    rm -rf /system/app/SelfRegister;
-    rm -rf /system/app/SystemAdSolution;
-    rm -rf /system/app/VoiceAssist;
-    rm -rf /system/app/XiaomiVip;
-    rm -rf /system/app/XMPass;
-    rm -rf /system/priv-app/MiuiVoip;
-    rm -rf /system/priv-app/VirtualSim;
+    # A network location service. Safe to remove if you plan on using Google Location service.
+    rm -rf /system/app/AnalyticsCore;
+    #ui_print "    [i] Removed app/AnalyticsCore (Phone-home backdoor app)";
+    rm -rf /system/app/AutoTest;
+    #ui_print "    [i] Removed app/AutoTest (Engineering diagnostics)";
+    rm -rf /system/app/SogouInput;
+    #ui_print "    [i] Chinese IME. Google Keyboard will be added to /system regardless of this choice.";
+    rm -rf /system/app/Whetstone;
+    #ui_print "    [i] Removed Whetstone (appkiller)";
     rm -rf /system/priv-app/YellowPage;
-    ui_print "    [i] Removed various Chinese-only services";
+    # TODO: Xiaomi.eu keeps this app, is it globalized or something? Check it out.
+    
+    ui_print "    [#] Removing various Chinese-only services/bloat...";
+    # Removing causes security alert on China
+    #rm -rf /system/app/GameCenter silent;
+    rm -rf /system/app/jjcontainer silent;
+    rm -rf /system/app/jjhome silent;
+    rm -rf /system/app/jjknowledge silent;
+    rm -rf /system/app/jjstore silent;
+    rm -rf /system/app/mab silent;
+    rm -rf /system/app/MiLivetalk silent;
+    rm -rf /system/app/Mipay silent;
+    # Can't disable MiuiSuperMarket on China
+    #rm -rf /system/app/MiuiSuperMarket silent;
+    # Removing causes security alert on China
+    #rm -rf /system/app/MiuiVideo silent;
+    rm -rf /system/app/PaymentService silent;
+    rm -rf /system/app/SelfRegister silent;
+    rm -rf /system/app/SystemAdSolution silent;
+    rm -rf /system/app/VoiceAssist silent;
+    rm -rf /system/app/XiaomiVip silent;
+    rm -rf /system/app/XMPass silent;
+    rm -rf /system/priv-app/MiuiVoip silent;
+    rm -rf /system/priv-app/VirtualSim silent;
+    
+    # non-optionals
     ui_print "[#] /system patches...";
+    ui_print "    [#] Disable OTA app ZIP validation";
     replace_line /system/etc/device_features/$device1.xml "    <bool name=\"support_ota_validate\">true</bool>" "    <bool name=\"support_ota_validate\">false</bool>"
-    ui_print "    [i] Disabled OTA app ZIP validation";
+    ui_print "    [#] Remove Chinese carrier app selection";
     replace_file /system/etc/install_app_filter.xml 644 install_app_filter.xml___replacement;
-    ui_print "    [i] Remove Chinese carrier app selection";
+    
+    ui_print "    [#] build.prop replacements/additions...";
+    # remove old build.prop tweaks first
+    if remove_section /system/build.prop "# CosmicDan Additionals" "########"; then
+        ui_print "    [!] Upgrade from old CosmicTweaks detected. Please note that the old build.prop changes are replaced OK, but I can NOT make it 100% original. If you want any future OTA deltas to work, please flash a stock ROM and start fresh. Sorry!";
+    fi;
+    # TODO: Options
     sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop > /dev/null 2>&1
-    append_file /system/build.prop "# CosmicDan Additionals 01 " build.prop___additions;
-    ui_print "    [i] build.prop replacements/additions";
+    append_file /system/build.prop "### CosmicTweaks - Camera quality/encoding tweaks" build.prop___additions___camera-tweaks;
+    append_file /system/build.prop "### CosmicTweaks - Fast dormancy (battery improvement)" build.prop___additions___fast-dormancy;
+    append_file /system/build.prop "### CosmicTweaks - Google location service" build.prop___additions___google-location;
+    append_file /system/build.prop "### CosmicTweaks - MIUI Optimization" build.prop___additions___miui-optimisation;
+    append_file /system/build.prop "### CosmicTweaks - Scrolling cache" build.prop___additions___scrolling-tweaks;
     
     ui_print " ";
     show_progress "0.2" "-1000"
-    ui_print "[#] Extracting new files to /system...";
+    ui_print "[#] Extract new /system files...";
     unzip -o "$ZIP" "system/*" -d "/";
+    
+    # TODO: Stuff that was moved to system_optional
+    # REGARDING FONTS: Have three options: 
+    #       MIUI Fonts in MIUI apps (original)
+    #       Roboto Fonts in MIUI apps (Xiaomi.eu style)
+    #       Default (Don't touch fonts at all. Select this in case fonts changes break your ROM).
+    
+    
     ui_print "    [#] Setting permissions...";
     show_progress "0.2" "-7000"
     busybox find /system/app/ -type d -exec chmod 755 {} \;
     busybox find /system/app/ -type f -exec chmod 644 {} \;
+    chmod 644 /system/etc/system_fonts.xml
     chmod 755 /system/etc/init.d
     busybox find /system/etc/init.d/ -type f -exec chmod 755 {} \;
+    busybox find /system/etc/permissions -type f -exec chmod 644 {} \;
     chmod 755 /system/etc/preferred-apps
     busybox find /system/etc/preferred-apps -type f -exec chmod 644 {} \;
     chmod 755 /system/etc/sysconfig
     busybox find /system/etc/sysconfig -type f -exec chmod 644 {} \;
+    busybox find /system/fonts -type f -exec chmod 644 {} \;
     busybox find /system/framework/ -type f -exec chmod 644 {} \;
     busybox find /system/priv-app/ -type d -exec chmod 755 {} \;
     busybox find /system/priv-app/ -type f -exec chmod 644 {} \;
-    busybox find /system/xbin/ -type f -exec chmod 755 {} \;
     ui_print " ";
+    
     ui_print "[i] Busybox installer thanks to YashdSaraf@XDA...";
     show_progress "0.1" "-2000"
-    PATH="/tmp/anykernel/bin:$PATH" $bb ash /tmp/anykernel/busybox_installer.sh $2 $3;
+    PATH="/tmp/anykernel/bin:$PATH" $bb ash /tmp/anykernel/busybox_installer.sh $OUTFD $ZIP;
 fi;
 
-############
-## Restore (post-kernel)
-############
-if [ "$choice_main" == "2" ]; then
-    # TODO
-    ui_print " ";
-fi;

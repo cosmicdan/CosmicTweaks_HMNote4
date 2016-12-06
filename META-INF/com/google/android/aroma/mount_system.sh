@@ -1,0 +1,2 @@
+#!/sbin/sh
+mount /system;
