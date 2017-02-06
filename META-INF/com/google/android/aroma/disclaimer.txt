@@ -1,0 +1,4 @@
+<@center>CosmicTweaks comes with no warranty or guarantee. If something goes wrong, you will NOT blame CosmicDan nor any other person involved in this project.
+
+<b><#c00>Make sure you have made a TWRP backup. CosmicTweaks has NO UNDO OR UNINSTALL FUNCTION.</#></b>
+</@>

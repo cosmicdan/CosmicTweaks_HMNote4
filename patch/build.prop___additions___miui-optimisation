@@ -1,0 +1,3 @@
+### CosmicTweaks - MIUI Optimization causes compatibility issues with many apps. You can manually re-enable in Developer options if you want it back.
+persist.sys.miui_optimization=false
+###

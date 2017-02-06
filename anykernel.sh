@@ -215,6 +215,31 @@ patch_fstab() {
   fi;
 }
 
+## cosmicdan additionals
+
+buildprop_enable() {
+    append_file /system/build.prop "$1" "$2";
+    ui_print "        <#0c0>... added!</#>";
+}
+
+buildprop_disable() {
+    if remove_section /system/build.prop "$1" "$2"; then
+        ui_print "        <#c00>... REMOVED!</#>";
+    else
+        ui_print "        <#00c>... not selected, skipped!</#>";
+    fi;
+}
+
+zip_extract_dir() {
+    if [ ! -d "$3" ]; then
+        mkdir -p "$3"
+    fi;
+    unzip -o "$1" "$2/*" -d "$3";
+    mv -f "$3/$2"/* "$3"
+    basedir=$(echo "$2" | cut -d "/" -f1)
+    rm -rf "$3/$basedir"
+} 
+
 ## end methods
 
 ###########################
@@ -342,30 +367,21 @@ fi;
 ui_print "[#] Writing kernel with patched RAMDisk...";
 write_boot;
 
-move_file() {
-    echo "$1"
-}
-
 ############
 ## Install (post-kernel)
 ############
 if [ "$choice_main" == "1" ]; then
     show_progress "0.2" "-1200"
 
-    ui_print "[#] /cust tasks...";
-    mount /cust
-    # TODO: options
-    rm -rf /cust/*
-    umount /cust
-    ui_print "    [i] /cust wiped";
-
     ui_print "[#] /system removals...";
-    # TODO: options
-    if [ -d "/system/data-app" ]; then
-        rm -rf "/system/data-app/*";
-        ui_print "    [i] Deleted pre-install bloat from /system/data-app/";
-    else
-        ui_print "    [i] Pre-install bloat at /system/data-app/ already deleted";
+    
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop data-app)" == "data-app_delete" ]; then
+        if [ -d "/system/data-app" ]; then
+            rm -rf "/system/data-app/*";
+            ui_print "    [i] Deleted pre-install bloat from /system/data-app/";
+        else
+            ui_print "    [i] Pre-install bloat at /system/data-app/ already deleted.";
+        fi;
     fi;
     
     if [ -f "/system/bin/install-recovery.sh" -o -f "/system/recovery-from-boot.p" ]; then
@@ -376,42 +392,55 @@ if [ "$choice_main" == "1" ]; then
         ui_print "    [i] Stock recovery patch/script not present";
     fi;
     
-    # TODO: options
-    rm -rf /system/app/AMAPNetworkLocation;
-    # A network location service. Safe to remove if you plan on using Google Location service.
-    rm -rf /system/app/AnalyticsCore;
-    #ui_print "    [i] Removed app/AnalyticsCore (Phone-home backdoor app)";
-    rm -rf /system/app/AutoTest;
-    #ui_print "    [i] Removed app/AutoTest (Engineering diagnostics)";
-    rm -rf /system/app/SogouInput;
-    #ui_print "    [i] Chinese IME. Google Keyboard will be added to /system regardless of this choice.";
-    rm -rf /system/app/Whetstone;
-    #ui_print "    [i] Removed Whetstone (appkiller)";
-    rm -rf /system/priv-app/YellowPage;
-    # TODO: Xiaomi.eu keeps this app, is it globalized or something? Check it out.
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop amapnetlocation)" == "1" ]; then
+        ui_print "    [#] Removing AMAPNetworkLocation...";
+        rm -rf /system/app/AMAPNetworkLocation;
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop analyticscore)" == "1" ]; then
+        ui_print "    [#] Removing AnalyticsCore...";
+        rm -rf /system/app/AnalyticsCore;
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop autotest)" == "1" ]; then
+        ui_print "    [#] Removing AutoTest...";
+        rm -rf /system/app/AutoTest;
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop sogouinput)" == "1" ]; then
+        ui_print "    [#] Removing SogouInput...";
+        rm -rf /system/app/SogouInput;
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop whetstone)" == "1" ]; then
+        ui_print "    [#] Removing Whetstone...";
+        rm -rf /system/app/Whetstone;
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop yellowpage)" == "1" ]; then
+        ui_print "    [#] Removing YellowPage...";
+        rm -rf /system/priv-app/YellowPage;
+    fi;
     
-    ui_print "    [#] Removing various Chinese-only services/bloat...";
-    # Removing causes security alert on China
-    #rm -rf /system/app/GameCenter silent;
-    rm -rf /system/app/jjcontainer silent;
-    rm -rf /system/app/jjhome silent;
-    rm -rf /system/app/jjknowledge silent;
-    rm -rf /system/app/jjstore silent;
-    rm -rf /system/app/mab silent;
-    rm -rf /system/app/MiLivetalk silent;
-    rm -rf /system/app/Mipay silent;
-    # Can't disable MiuiSuperMarket on China
-    #rm -rf /system/app/MiuiSuperMarket silent;
-    # Removing causes security alert on China
-    #rm -rf /system/app/MiuiVideo silent;
-    rm -rf /system/app/PaymentService silent;
-    rm -rf /system/app/SelfRegister silent;
-    rm -rf /system/app/SystemAdSolution silent;
-    rm -rf /system/app/VoiceAssist silent;
-    rm -rf /system/app/XiaomiVip silent;
-    rm -rf /system/app/XMPass silent;
-    rm -rf /system/priv-app/MiuiVoip silent;
-    rm -rf /system/priv-app/VirtualSim silent;
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop otherbloatapps)" == "1" ]; then
+        ui_print "    [#] Removing various Chinese-only services/bloat...";
+        # Removing causes security alert on China
+        #rm -rf /system/app/GameCenter silent;
+        rm -rf /system/app/jjcontainer silent;
+        rm -rf /system/app/jjhome silent;
+        rm -rf /system/app/jjknowledge silent;
+        rm -rf /system/app/jjstore silent;
+        rm -rf /system/app/mab silent;
+        rm -rf /system/app/MiLivetalk silent;
+        rm -rf /system/app/Mipay silent;
+        # Can't disable MiuiSuperMarket on China
+        #rm -rf /system/app/MiuiSuperMarket silent;
+        # Removing causes security alert on China
+        #rm -rf /system/app/MiuiVideo silent;
+        rm -rf /system/app/PaymentService silent;
+        rm -rf /system/app/SelfRegister silent;
+        rm -rf /system/app/SystemAdSolution silent;
+        rm -rf /system/app/VoiceAssist silent;
+        rm -rf /system/app/XiaomiVip silent;
+        rm -rf /system/app/XMPass silent;
+        rm -rf /system/priv-app/MiuiVoip silent;
+        rm -rf /system/priv-app/VirtualSim silent;
+    fi;
     
     # non-optionals
     ui_print "[#] /system patches...";
@@ -420,30 +449,139 @@ if [ "$choice_main" == "1" ]; then
     ui_print "    [#] Remove Chinese carrier app selection";
     replace_file /system/etc/install_app_filter.xml 644 install_app_filter.xml___replacement;
     
+    #######
+    ### build.prop
     ui_print "    [#] build.prop replacements/additions...";
     # remove old build.prop tweaks first
     if remove_section /system/build.prop "# CosmicDan Additionals" "########"; then
         ui_print "    [!] Upgrade from old CosmicTweaks detected. Please note that the old build.prop changes are replaced OK, but I can NOT make it 100% original. If you want any future OTA deltas to work, please flash a stock ROM and start fresh. Sorry!";
     fi;
-    # TODO: Options
-    sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop > /dev/null 2>&1
-    append_file /system/build.prop "### CosmicTweaks - Camera quality/encoding tweaks" build.prop___additions___camera-tweaks;
-    append_file /system/build.prop "### CosmicTweaks - Fast dormancy (battery improvement)" build.prop___additions___fast-dormancy;
-    append_file /system/build.prop "### CosmicTweaks - Google location service" build.prop___additions___google-location;
-    append_file /system/build.prop "### CosmicTweaks - MIUI Optimization" build.prop___additions___miui-optimisation;
-    append_file /system/build.prop "### CosmicTweaks - Scrolling cache" build.prop___additions___scrolling-tweaks;
     
+    sed 's/^ro.product.locale=*/ro.product.locale=en-US/g' /system/build.prop > /dev/null 2>&1
+    append_file /system/build.prop "### CosmicTweaks - Common tweaks" build.prop___additions;
+    
+    # do optionals
+    ui_print "        [#] Camera quality/encoding tweaks...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop camera)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - Camera quality/encoding tweaks" build.prop___additions___camera-tweaks;
+    else
+        buildprop_disable "### CosmicTweaks - Camera quality/encoding tweaks" "###";
+    fi;
+    
+    ui_print "        [#] Fast dormancy (battery improvement)...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop fastdormancy)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - Fast dormancy (battery improvement)" build.prop___additions___fast-dormancy;
+    else
+        buildprop_disable "### CosmicTweaks - Fast dormancy (battery improvement)" "###";
+    fi;
+    
+    ui_print "        [#] Force disable 4G...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop forcedisable4g)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - Force disable 4G" build.prop___additions___force_disable_4g;
+    else
+        buildprop_disable "### CosmicTweaks - Force disable 4G" "###";
+    fi;
+    
+    ui_print "        [#] Google location service...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop googlelocation)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - Google location service" build.prop___additions___google-location;
+    else
+        buildprop_disable "### CosmicTweaks - Google location service" "###";
+    fi;
+    
+    ui_print "        [#] Disable MIUI Optimization...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop miuioptimization)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - MIUI Optimization" build.prop___additions___miui-optimisation;
+    else
+        buildprop_disable "### CosmicTweaks - MIUI Optimization" "###";
+    fi;
+    
+    ui_print "        [#] Scrolling tweaks...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop scrollingtweaks)" == "1" ]; then
+        buildprop_enable "### CosmicTweaks - Scrolling cache" build.prop___additions___scrolling-tweaks;
+    else
+        buildprop_disable "### CosmicTweaks - Scrolling cache" "###";
+    fi;
+    
+    ### end build.prop
+    #######
+    
+    #######
+    ### install
     ui_print " ";
     show_progress "0.2" "-1000"
     ui_print "[#] Extract new /system files...";
     unzip -o "$ZIP" "system/*" -d "/";
     
-    # TODO: Stuff that was moved to system_optional
-    # REGARDING FONTS: Have three options: 
-    #       MIUI Fonts in MIUI apps (original)
-    #       Roboto Fonts in MIUI apps (Xiaomi.eu style)
-    #       Default (Don't touch fonts at all. Select this in case fonts changes break your ROM).
+    # additions
+    ui_print "    [#] Additions/replacements...";
+    if [ "$(file_getprop /tmp/aroma/install_additions.prop googlefeedback)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/priv-app___GoogleFeedback" "/system/priv-app/"
+        ui_print "        [i] Google Feedback added";
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_additions.prop aospprovision)" == "1" ]; then
+        if [ -d "/system/app/Provision" ]; then
+            rm -rf "/system/app/Provision";
+            zip_extract_dir "$ZIP" "system_optional/priv-app___Provision-AOSP" "/system/priv-app/"
+            ui_print "        [i] MIUI Provision replaced with AOSP version";
+        else
+            ui_print "        [i] AOSP Provision selected, but MIUI version not found. Skipped.";
+        fi;
+    fi;
+    ui_print "        [#] Vendor overlays...";
+    mkdir -p "/system/vendor/overlay";
+    if [ "$(file_getprop /tmp/aroma/install_additions.prop framework)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/vendor_overlay___framework" "/system/vendor/overlay/"
+        ui_print "            [i] framework-res";
+    fi;
+    if [ "$(file_getprop /tmp/aroma/install_additions.prop quicksearchbox)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/vendor_overlay___QuickSearchBox" "/system/vendor/overlay/"
+        ui_print "            [i] QuickSearchBox";
+    fi;
     
+
+    # init.d
+    ui_print "    [#] init.d scripts...";
+    mkdir -p "/system/etc/init.d";
+    
+    ui_print "        [#] Clear Icon Cache...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop cleariconcache)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___clear_icon_cache" "/system/etc/init.d/"
+        ui_print "        <#0c0>... added!</#>";
+    else
+        if [ -f "/system/etc/init.d/clear_icon_cache" ]; then
+            rm "/system/etc/init.d/clear_icon_cache";
+            ui_print "        <#c00>... REMOVED!</#>";
+        else
+            ui_print "        <#00c>... not selected, skipped!</#>";
+        fi;
+    fi;
+    
+    ui_print "        [#] VM and LMK values...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop vmlmkvalues)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___memory_vm_lmk_tweaks" "/system/etc/init.d/"
+        ui_print "        <#0c0>... added!</#>";
+    else
+        if [ -f "/system/etc/init.d/memory_vm_lmk_tweaks" ]; then
+            rm "/system/etc/init.d/memory_vm_lmk_tweaks";
+            ui_print "        <#c00>... REMOVED!</#>";
+        else
+            ui_print "        <#00c>... not selected, skipped!</#>";
+        fi;
+    fi;
+    
+    ui_print "        [#] Set Internal to NOOP I/O...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop internalnoop)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___mmcblk0_scheduler_noop" "/system/etc/init.d/"
+        ui_print "        <#0c0>... added!</#>";
+    else
+        if [ -f "/system/etc/init.d/mmcblk0_scheduler_noop" ]; then
+            rm "/system/etc/init.d/mmcblk0_scheduler_noop";
+            ui_print "        <#c00>... REMOVED!</#>";
+        else
+            ui_print "        <#00c>... not selected, skipped!</#>";
+        fi;
+    fi;
     
     ui_print "    [#] Setting permissions...";
     show_progress "0.2" "-7000"

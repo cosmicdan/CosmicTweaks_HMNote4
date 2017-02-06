@@ -1,0 +1,4 @@
+### CosmicTweaks - Google location service
+ro.com.google.locationfeatures=1
+ro.com.google.networklocation=1
+###

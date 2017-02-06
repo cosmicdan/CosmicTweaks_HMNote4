@@ -28,13 +28,22 @@ if (getvar("is_device_valid")=="0") then
     exit("");;
 endif;
 
+agreebox(
+    "Disclaimer",
+    "Please read and acknowledge the following information",
+    "@warning",
+    resread("disclaimer.txt"),
+    "I understand and have made a backup",
+    "You must acknowledge the disclaimer to use CosmicTweaks!"
+);
+
+
 resexec("mount_system.sh");
 
 if (file_getprop("/system/build.prop", "ro.miui.cust_variant") == "eu") then
     setvar("romtypestring", "Xiaomi.eu");
     setvar("iseurom", true);
 else
-    # TODO: Distinguish between global/china later maybe?
     setvar("romtypestring", "Official Global/China");
     setvar("iseurom", false);
 endif;
@@ -70,6 +79,71 @@ menubox(
 ## Install
 #########
 if prop("choice_main.prop","selected")=="1" then
+
+    if (getvar("iseurom")==true) then
+        setvar("selected_if-eu",        "select.selected");
+        setvar("selected_if-official",  "select");
+        setvar("checked_if-eu",         "check.checked");
+        setvar("checked_if-official",   "check");
+    else
+        setvar("selected_if-eu",        "select");
+        setvar("selected_if-official",  "select.selected");
+        setvar("checked_if-eu",         "check");
+        setvar("checked_if-official",   "check.checked");
+    endif;
+
+    # removals
+    form(
+        "App Removals",
+        "Select which apps you wish to remove. Some recommended defaults are already set depending on if you are on an Official or EU ROM.",
+        "@install",
+        "install_removals.prop",
+        "data-app",         "/system/data-app/ files",  "",                                                                                                     "group",
+        "data-app_delete",  "Erase /system/data-app/",  "Erase files at /system/data-app/. Usually only exists on official ROM's (preinstalled China apps).",   "select.selected",
+        "data-app_keep",    "Keep /system/data-app/",   "Keep files at /system/data-app/. For unsupported / unknown ROM's - EU has no data-app at all.",        "select",
+        "systembloat",      "/system bloat/china apps", "",                                                                                                     "group",
+        "amapnetlocation",  "AMAPNetworkLocation",      "Non-Google location provider. <#c00>Must be removed on China ROM for Google Location to work.</#>",    getvar("checked_if-official"),
+        "analyticscore",    "AnalyticsCore",            "Xiaomi stats collection. Has a LOT of suspicious dataminer-like permissions. Already removed on EU.",  getvar("checked_if-official"),
+        "autotest",         "AutoTest",                 "MTK engineering and diagnostics app. Should be safe to remove.",                                       "check.checked",
+        "sogouinput",       "SogouInput",               "Chinese IME (Keyboard). Uncheck to let Google Keyboard be the default on China ROM.",                  getvar("checked_if-official"),
+        "whetstone",        "Whetstone",                "Pure evil. Built-in MIUI appkiller and 'memory optimizer'. See CosmicTweaks thread for details.",      "check.checked",
+        "yellowpage",       "YellowPage",               "Yellow Pages app. Only useful for China. EU ROM seems to have a custom/translated version.",           getvar("checked_if-official"),
+        "otherbloatapps",   "Others",                   "Remove all other China-only and useless bloatware. Safe to leave checked even if you're on EU.",       "check.checked"
+    );
+    
+    # tweaks
+    form(
+        "Tweaks",
+        "Select desired tweaks. <#c00>If you uncheck any of these, the tweak will be *removed* from the system.</#> Be sure to read all, and scroll down for more.",
+        "@install",
+        "install_tweaks.prop",
+        "buildprop",        "build.prop tweaks",        "",                                                                                                     "group",
+        "camera",           "Camera quality",           "Various improvements to camera image/video quality and capability",                                    "check.checked",
+        "fastdormancy",     "Fast Dormancy",            "Improves battery life if carrier supports it. <#c00>Relevance unconfirmed for MTK devices.</#>",       "check.checked",
+        "forcedisable4g",   "Force 4G Disabled",        "Force disables all 4G capability. <#00c>Fixes deep-sleep issue for old 3G-only SIM cards.</#>",        "check",
+        "googlelocation",   "Google Location Service",  "Set Google Location Service as the default.",                                                          "check.checked",
+        "miuioptimization", "Disable MIUI Optimization","Provides better compatibility, but might remove some MIUI style from 3rd-party apps.",                 "check.checked",
+        "scrollingtweaks",  "Scrolling Tweaks",         "Smaller scrolling cache (saves memory) and fling velocity tweak",                                      "check.checked",
+        "initd",            "init.d tweaks",            "",                                                                                                     "group",
+        "cleariconcache",   "Clear Icon Cache",         "Clear Icon Cache on every boot. Useful for Unicon users or others who experience custom icon bugs.",   "check",
+        "vmlmkvalues",      "VM and LMK values",        "Personal values for much better multitasking with minimal impact to foreground performance.",          "check.checked",
+        "internalnoop",     "Set Internal to NOOP I/O", "Use the NOOP scheduler for internal storage. Disable for default CFQ.",                                "check.checked"
+    );
+    
+    # additions
+    form(
+        "Additions and Replacements",
+        "Select desired additions. <#c00>If you uncheck any of these, the additions/replacements will NOT be removed/reverted from the system.</#>",
+        "@install",
+        "install_additions.prop",
+        "priv-apps",        "System apps",              "",                                                                                                     "group",
+        "googlefeedback",   "Google Feedback",          "Add Google's version of the 'Report' app (FC dialog), taking over MIUI's. MIUI's one is better IMO.",  "check",
+        "aospprovision",    "AOSP Provision",           "Replacement for MIUI Setup Wizard, skipping it completely. <#c00>Will not bypass activation.</#>",     getvar("checked_if-official"),
+        "vendoroverlay",    "Vendor Overlays",          "",                                                                                                     "group",
+        "framework",        "framework-res",            "Some basic tweaks that everyone probably wants. See feature list in thread for details.",              "check.checked",
+        "quicksearchbox",   "Quick Search Box",         "English and Global-ify the MIUI search. Safe for use on Xiaomi.eu.",                                   "check.checked"
+    );
+    
 
     ini_set("text_next", "Install  ");
     ini_set("icon_next", "@install");

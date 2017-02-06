@@ -1,0 +1,6 @@
+### CosmicTweaks - Force disable 4G, fixes deep-sleep for old SIM cards
+ro.mtk_lte_support=0
+ro.mtk_volte_support=0
+ro.mtk_vilte_support=0
+ro.mtk_vilte_ut_support=0
+###

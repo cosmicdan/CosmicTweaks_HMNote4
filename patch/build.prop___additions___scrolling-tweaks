@@ -1,0 +1,5 @@
+### CosmicTweaks - Scrolling cache/fling tweak
+persist.sys.scrollingcache=3
+ro.max.fling_velocity 12000
+ro.min.fling_velocity 8000
+###

@@ -1,0 +1,6 @@
+### CosmicTweaks - Fast dormancy (battery improvement)
+ro.fast.dormancy=1
+ro.ril.fast.dormancy.rule=1
+#Not sure what this does, I'd rather be safe and leave it off
+#persist.radio.data_no_toggle=1
+###

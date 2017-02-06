@@ -1,0 +1,9 @@
+#!/system/bin/sh
+
+while sleep 1; do
+    if [ `pgrep com.android.systemui` ]; then
+        rm -rf /data/system/theme_magic/customized_icons
+        echo "Deleted /data/system/theme_magic/customized_icons"
+        break;
+    fi;
+done

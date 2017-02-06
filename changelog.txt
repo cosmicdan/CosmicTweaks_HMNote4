@@ -1,10 +1,14 @@
-<b>2016.12.xx</b>
+<b>2017.02.07</b>
 
-<*>New - QuickSearchBox translation/globalize overlay</*>
-<*>New - Init.d script - Clear icon cache every boot (useful for Unicon)</*>
 <*>New - Aroma Installer</*>
-    <*>Add Insecure ADB On Boot option</*>
-    <*>Add Restore function (uninstall ComsicTweaks)</*>
+    - Made lots of existing features optional
+    - Add Insecure ADB On Boot option
+    - Probably more awesome stuff that I can't remember because I kind of dropped off the face of the planet for too long and didn't take complete notes
+<*>New - QuickSearchBox translation/globalize overlay</*>
+<*>New - Init.d script - Clear icon cache every boot (useful for Unicon users... Unicon still only works sometimes sadly)</*>
+<*>Remove - MiRemote APK replacement (not very interesting, just keep the original firmware one)</*>
+<*>Remove - WallpaperCarousel APK replacement (as above)</*>
+<*>Remove - /cust wipe feature (no longer useful)</*>
 <*>Fix - Init.d scripts shouldn't block flow control</*>
 
 
