@@ -515,10 +515,6 @@ if [ "$choice_main" == "1" ]; then
     
     # additions
     ui_print "    [#] Additions/replacements...";
-    if [ "$(file_getprop /tmp/aroma/install_additions.prop googlefeedback)" == "1" ]; then
-        zip_extract_dir "$ZIP" "system_optional/priv-app___GoogleFeedback" "/system/priv-app/"
-        ui_print "        [i] Google Feedback added";
-    fi;
     if [ "$(file_getprop /tmp/aroma/install_additions.prop aospprovision)" == "1" ]; then
         if [ -d "/system/app/Provision" ]; then
             rm -rf "/system/app/Provision";

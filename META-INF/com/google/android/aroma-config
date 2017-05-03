@@ -139,7 +139,6 @@ if prop("choice_main.prop","selected")=="1" then
         "@install",
         "install_additions.prop",
         "priv-apps",        "System apps",              "",                                                                                                     "group",
-        "googlefeedback",   "Google Feedback",          "Add Google's version of the 'Report' app (FC dialog), taking over MIUI's. MIUI's one is better IMO.",  "check",
         "aospprovision",    "AOSP Provision",           "Replacement for MIUI Setup Wizard, skipping it completely. <#c00>Will not bypass activation.</#>",     getvar("checked_if-official"),
         "vendoroverlay",    "Vendor Overlays",          "",                                                                                                     "group",
         "framework",        "framework-res",            "Some basic tweaks that everyone probably wants. See feature list in thread for details.",              "check.checked",
