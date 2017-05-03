@@ -2,6 +2,7 @@ ini_set("force_colorspace","rgba");
 
 ziptotmp("anykernel.prop", "anykernel.prop");
 ziptotmp("changelog.txt", "changelog.txt");
+ziptotmp("disclaimer.txt", "disclaimer.txt");
 
 ini_set("rom_name",             file_getprop("/tmp/aroma/anykernel.prop","name"));
 ini_set("rom_version",          file_getprop("/tmp/aroma/anykernel.prop","version"));
@@ -32,7 +33,7 @@ agreebox(
     "Disclaimer",
     "Please read and acknowledge the following information",
     "@warning",
-    resread("disclaimer.txt"),
+    read("/tmp/aroma/changelog.txt"),
     "I understand and have made a backup",
     "You must acknowledge the disclaimer to use CosmicTweaks!"
 );
