@@ -3,6 +3,7 @@ ini_set("force_colorspace","rgba");
 ziptotmp("anykernel.prop", "anykernel.prop");
 ziptotmp("changelog.txt", "changelog.txt");
 ziptotmp("disclaimer.txt", "disclaimer.txt");
+ziptotmp("credits.txt", "credits.txt");
 
 ini_set("rom_name",             file_getprop("/tmp/aroma/anykernel.prop","name"));
 ini_set("rom_version",          file_getprop("/tmp/aroma/anykernel.prop","version"));

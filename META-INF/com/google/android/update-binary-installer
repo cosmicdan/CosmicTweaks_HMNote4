@@ -80,10 +80,10 @@ umount /data;
 ui_print " ";
 ui_print "[i] Done!";
 ui_print " ";
-ui_print "Credits and thanks :";
-ui_print " - Xiaomi.eu community for some translated/globalized resources";
-ui_print " - icons8.com for Aroma icons";
+while read line || [ -n "$line" ]; do
+    ui_print "$line"
+done < /tmp/aroma/credits.txt
 ui_print " ";
-ui_print "<#009>Be sure to select 'Save Logs' in case you need to report a bug (this will overwrite any other CosmicTweaks log).</#>";
+ui_print "<#009>Be sure to select 'Save Logs' in case you need to report a bug (this will overwrite any existing CosmicTweaks log made from the same ZIP).</#>";
 set_progress "1.0"
 
