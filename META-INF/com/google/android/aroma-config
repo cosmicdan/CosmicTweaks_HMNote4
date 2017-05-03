@@ -33,7 +33,7 @@ agreebox(
     "Disclaimer",
     "Please read and acknowledge the following information",
     "@warning",
-    read("/tmp/aroma/changelog.txt"),
+    read("/tmp/aroma/disclaimer.txt"),
     "I understand and have made a backup",
     "You must acknowledge the disclaimer to use CosmicTweaks!"
 );
