@@ -142,7 +142,7 @@ if prop("choice_main.prop","selected")=="1" then
         "aospprovision",    "AOSP Provision",           "Replacement for MIUI Setup Wizard, skipping it completely. <#c00>Will not bypass activation.</#>",     getvar("checked_if-official"),
         "vendoroverlay",    "Vendor Overlays",          "",                                                                                                     "group",
         "framework",        "framework-res",            "Some basic tweaks that everyone probably wants. See feature list in thread for details.",              "check.checked",
-        "quicksearchbox",   "Quick Search Box",         "English and Global-ify the MIUI search. Safe for use on Xiaomi.eu.",                                   "check.checked"
+        "quicksearchbox",   "Quick Search Box",         "English and Global-ify the MIUI search. Not necessary for Xiaomi.eu.",                                 getvar("checked_if-official")
     );
     
 
