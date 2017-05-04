@@ -1,9 +1,21 @@
+<b>2017.05.05</b>
+
+<*>Tested with Xiami.eu 7.4.27 but should still work with all others</*>
+<*>New - 'Integrate ART Cache' tool</*>
+<*>New - 'Disable PerfService' and 'asusm930's Tweaks' options</*>
+<*>Change - Google Apps now optional, default-checked for official ROM's only</*>
+<*>Change - Quick Search Box RRO default-checked for official ROM's only</*>
+<*>Change - Update Whetstone description, now unchecked by default as it's not a broken mess like it used to be</*>
+<*>Remove - Google Feedback option (not actually useful, I was confused by ignorance on how system vs data app bug reports work)</*>
+
+
+
 <b>2017.02.07</b>
 
-<*>New - Aroma Installer</*>
+<*>New - Aroma Installer
     - Made lots of existing features optional
     - Add Insecure ADB On Boot option
-    - Probably more awesome stuff that I can't remember because I kind of dropped off the face of the planet for too long and didn't take complete notes
+    - Probably more awesome stuff that I can't remember because I didn't take full notes</*>
 <*>New - QuickSearchBox translation/globalize overlay</*>
 <*>New - Init.d script - Clear icon cache every boot (useful for Unicon users... Unicon still only works sometimes sadly)</*>
 <*>Remove - MiRemote APK replacement (not very interesting, just keep the original firmware one)</*>
