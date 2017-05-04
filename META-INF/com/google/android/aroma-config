@@ -108,7 +108,7 @@ if prop("choice_main.prop","selected")=="1" then
         "amapnetlocation",  "AMAPNetworkLocation",      "Non-Google location provider. <#c00>Must be removed on China ROM for Google Location to work.</#>",    getvar("checked_if-official"),
         "analyticscore",    "AnalyticsCore",            "Xiaomi stats collection. Has a LOT of suspicious dataminer-like permissions. Already removed on EU.",  getvar("checked_if-official"),
         "autotest",         "AutoTest",                 "MTK engineering and diagnostics app. Should be safe to remove.",                                       "check.checked",
-        "sogouinput",       "SogouInput",               "Chinese IME (Keyboard). Uncheck to let Google Keyboard be the default on China ROM.",                  getvar("checked_if-official"),
+        "sogouinput",       "SogouInput",               "Chinese IME (Keyboard). Check to let Google Keyboard be the default on China ROM.",                    getvar("checked_if-official"),
         "whetstone",        "Whetstone",                "MIUI's memory manager. Buggy on some older versions. See CosmicTweaks thread for details.",            "check",
         "yellowpage",       "YellowPage",               "Yellow Pages app. Only useful for China. EU ROM seems to have a custom/translated version.",           getvar("checked_if-official"),
         "otherbloatapps",   "Others",                   "Remove all other China-only and useless bloatware. Safe to leave checked even if you're on EU.",       "check.checked"
