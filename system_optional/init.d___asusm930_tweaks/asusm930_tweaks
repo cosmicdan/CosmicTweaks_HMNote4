@@ -1,0 +1,40 @@
+#!/system/bin/sh
+
+echo 10000 > /dev/cpuctl/bg_non_interactive/cpu.rt_runtime_us
+echo 950000 > /dev/cpuctl/cpu.rt_runtime_us
+echo 1000000 > /dev/cpuctl/cpu.rt_period_us
+echo 0 > /proc/sys/kernel/sched_tunable_scaling
+#echo 1 > /proc/mali/dvfs_enable
+echo 1 > /proc/gpufreq/gpufreq_limited_thermal_ignore
+#echo 442500 > /proc/gpufreq/gpufreq_opp_max_freq
+#echo 1 > /proc/cpufreq/cpufreq_idvfs_mode
+echo 1898000 > /proc/cpufreq/cpufreq_up_threshold_b
+echo 1625000 > /proc/cpufreq/cpufreq_up_threshold_l
+#echo 1898000 > /proc/cpufreq/cpufreq_up_threshold_ll
+echo 0 > /proc/hps/rush_boost_enabled
+echo 0 > /proc/hps/input_boost_enabled
+echo 0 > /sys/module/alarm_dev/parameters/debug_mask
+#echo 0 > /sys/module/alarmtimer/parameters/debug_mask
+echo 0 > /sys/module/binder/parameters/debug_mask
+#echo 0 > /sys/module/earlysuspend/parameters/debug_mask
+#echo 0 > /sys/module/sbsuspend/parameters/sbsuspend_debug_mask
+echo 0 > /sys/module/snd/parameters/debug
+#echo 0 > /sys/module/pvrsrvkm/parameters/gPVRDebugLevel
+echo 0 > /sys/module/musb_hdrc/parameters/debug_level
+echo 0 > /sys/module/lowmemorykiller/parameters/debug_level
+echo 0 > /proc/gpufreq/gpufreq_input_boost
+echo 99 > /proc/hps/up_threshold
+echo 87 > /proc/hps/down_threshold
+echo 300 > /proc/sys/vm/dirty_expire_centisecs
+echo 500 > /proc/sys/vm/dirty_writeback_centisecs
+echo 384 > /proc/sys/kernel/random/read_wakeup_threshold
+echo 448 > /proc/sys/kernel/random/write_wakeup_threshold
+
+#########
+
+#echo 99 > /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load 
+#echo 99 > /sys/devices/system/cpu/cpufreq/interactive/target_loads
+#echo 25000 > /sys/devices/system/cpu/cpufreq/interactive/timer_rate
+#echo 10000 > /sys/devices/system/cpu/cpufreq/interactive/min_sample_time
+#echo 5000 > /sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay 
+#echo 40000 > /sys/devices/system/cpu/cpufreq/interactive/timer_slack

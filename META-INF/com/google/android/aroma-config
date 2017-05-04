@@ -69,7 +69,7 @@ menubox(
     "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",
     "Configure ADB",            "Change Boot-time ADB / Security level",                "@adb",
     "Integrate ART Cache",      "Move system OAT files from /data to /system",          "@chip",
-    "Icon Modder",              "All your icon modding needs!",                         "@brush",
+    #"Icon Modder",              "All your icon modding needs!",                         "@brush",
     "Changelog",                "View changelog for this version",                      "@changelog",
     "Exit",                     "Exit and return to Recovery",                          "@exit"
 );
@@ -95,10 +95,12 @@ if prop("choice_main.prop","selected")=="1" then
 
     # removals
     form(
-        "App Removals",
-        "Select which apps you wish to remove. Some recommended defaults are already set depending on if you are on an Official or EU ROM.",
+        "Removals",
+        "Select which features you wish to remove. Some recommended defaults are already set depending on if you are on an Official or EU ROM. <#c00>If you uncheck any of these, existing removals will NOT be restored.</#>",
         "@install",
         "install_removals.prop",
+        "systemremovals",   "System Removals",  "",                                                                                                             "group",
+        "disableperfsvc",   "Disable PerfService",      "Disable MTK PerfService (userlevel-dictated CPU throttling service) which helps save battery.",        "check.checked",
         "data-app",         "/system/data-app/ files",  "",                                                                                                     "group",
         "data-app_delete",  "Erase /system/data-app/",  "Erase files at /system/data-app/. Usually only exists on official ROM's (preinstalled China apps).",   "select.selected",
         "data-app_keep",    "Keep /system/data-app/",   "Keep files at /system/data-app/. For unsupported / unknown ROM's - EU has no data-app at all.",        "select",
@@ -126,15 +128,16 @@ if prop("choice_main.prop","selected")=="1" then
         "miuioptimization", "Disable MIUI Optimization","Provides better compatibility, but might remove some MIUI style from 3rd-party apps.",                 "check.checked",
         "scrollingtweaks",  "Scrolling Tweaks",         "Smaller scrolling cache (saves memory) and fling velocity tweak",                                      "check.checked",
         "initd",            "init.d tweaks",            "",                                                                                                     "group",
-        "cleariconcache",   "Clear Icon Cache",         "Clear Icon Cache on every boot. Useful for Unicon users or others who experience custom icon bugs.",   "check",
+        "asusm930",         "asusm930's Tweaks",        "Script from 'UPDATE 3.0 (C)' of asusm930's thread. <#c00>Disabling perfservice recommended.</#>",      "check.checked",
+        "internalnoop",     "Set Internal to NOOP I/O", "Use the NOOP scheduler for internal storage. Disable for default CFQ.",                                "check.checked",
         "vmlmkvalues",      "VM and LMK values",        "Personal values for much better multitasking with minimal impact to foreground performance.",          "check.checked",
-        "internalnoop",     "Set Internal to NOOP I/O", "Use the NOOP scheduler for internal storage. Disable for default CFQ.",                                "check.checked"
+        "cleariconcache",   "Clear Icon Cache",         "Clear Icon Cache on every boot. Useful for Unicon users or others who experience custom icon bugs.",   "check"
     );
     
     # additions
     form(
         "Additions and Replacements",
-        "Select desired additions. <#c00>If you uncheck any of these, the additions/replacements will NOT be removed/reverted from the system.</#>",
+        "Select desired additions. <#c00>If you uncheck any of these, the additions/replacements will NOT be removed/reverted.</#>",
         "@install",
         "install_additions.prop",
         "priv-apps",        "System apps",              "",                                                                                                     "group",

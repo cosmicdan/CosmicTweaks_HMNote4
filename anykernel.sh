@@ -465,6 +465,13 @@ if [ "$choice_main" == "1" ]; then
 
     ui_print "[#] /system removals...";
     
+    if [ "$(file_getprop /tmp/aroma/install_removals.prop disableperfsvc)" == "1" ]; then
+        ui_print "    [#] Removing PerfService...";
+        replace_line /system/build.prop "ro.mtk_perfservice_support=" "ro.mtk_perfservice_support=0"
+        echo -n "" > /system/etc/perfservapplist.txt
+        echo -n "" > /system/etc/perfservscntbl.txt
+    fi;
+    
     if [ "$(file_getprop /tmp/aroma/install_removals.prop data-app)" == "data-app_delete" ]; then
         if [ -d "/system/data-app" ]; then
             rm -rf "/system/data-app/*";
@@ -630,13 +637,26 @@ if [ "$choice_main" == "1" ]; then
     ui_print "    [#] init.d scripts...";
     mkdir -p "/system/etc/init.d";
     
-    ui_print "        [#] Clear Icon Cache...";
-    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop cleariconcache)" == "1" ]; then
-        zip_extract_dir "$ZIP" "system_optional/init.d___clear_icon_cache" "/system/etc/init.d/"
+    ui_print "        [#] asusm930's Tweaks...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop asusm930)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___asusm930_tweaks" "/system/etc/init.d/"
         ui_print "        <#0c0>... added!</#>";
     else
-        if [ -f "/system/etc/init.d/clear_icon_cache" ]; then
-            rm "/system/etc/init.d/clear_icon_cache";
+        if [ -f "/system/etc/init.d/asusm930_tweaks" ]; then
+            rm "/system/etc/init.d/asusm930_tweaks";
+            ui_print "        <#c00>... REMOVED!</#>";
+        else
+            ui_print "        <#00c>... not selected, skipped!</#>";
+        fi;
+    fi;
+    
+    ui_print "        [#] Set Internal to NOOP I/O...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop internalnoop)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___mmcblk0_scheduler_noop" "/system/etc/init.d/"
+        ui_print "        <#0c0>... added!</#>";
+    else
+        if [ -f "/system/etc/init.d/mmcblk0_scheduler_noop" ]; then
+            rm "/system/etc/init.d/mmcblk0_scheduler_noop";
             ui_print "        <#c00>... REMOVED!</#>";
         else
             ui_print "        <#00c>... not selected, skipped!</#>";
@@ -656,13 +676,13 @@ if [ "$choice_main" == "1" ]; then
         fi;
     fi;
     
-    ui_print "        [#] Set Internal to NOOP I/O...";
-    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop internalnoop)" == "1" ]; then
-        zip_extract_dir "$ZIP" "system_optional/init.d___mmcblk0_scheduler_noop" "/system/etc/init.d/"
+    ui_print "        [#] Clear Icon Cache...";
+    if [ "$(file_getprop /tmp/aroma/install_tweaks.prop cleariconcache)" == "1" ]; then
+        zip_extract_dir "$ZIP" "system_optional/init.d___clear_icon_cache" "/system/etc/init.d/"
         ui_print "        <#0c0>... added!</#>";
     else
-        if [ -f "/system/etc/init.d/mmcblk0_scheduler_noop" ]; then
-            rm "/system/etc/init.d/mmcblk0_scheduler_noop";
+        if [ -f "/system/etc/init.d/clear_icon_cache" ]; then
+            rm "/system/etc/init.d/clear_icon_cache";
             ui_print "        <#c00>... REMOVED!</#>";
         else
             ui_print "        <#00c>... not selected, skipped!</#>";
