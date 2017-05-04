@@ -52,9 +52,6 @@ endif;
 
 setvar("romversion", file_getprop("/system/build.prop", "ro.build.version.incremental"));
 
-# self-reminder in case I ever want a 'dynamic menu' type thing
-# eval(read("/tmp/other_aroma_script.edify"));
-
 gotolabel("start");
 ini_set("text_next", "Next");
 ini_set("icon_next", "@next");
@@ -71,6 +68,8 @@ menubox(
     "choice_main.prop",
     "Install",                  "Begin customization of ROM with CosmicTweaks",         "@install",
     "Configure ADB",            "Change Boot-time ADB / Security level",                "@adb",
+    "Integrate ART Cache",      "Move system OAT files from /data to /system",          "@chip",
+    "Icon Modder",              "All your icon modding needs!",                         "@brush",
     "Changelog",                "View changelog for this version",                      "@changelog",
     "Exit",                     "Exit and return to Recovery",                          "@exit"
 );
@@ -245,9 +244,53 @@ if prop("choice_main.prop","selected")=="2" then
 endif;
 
 #########
-## Changelog
+## Integrate ART Cache
 #########
 if prop("choice_main.prop","selected")=="3" then
+    ini_set("text_next", "Integrate  ");
+    ini_set("icon_next", "@chip");
+    textbox(
+        "Integrate ART Cache",
+        "Move system OAT files from /data to /system",
+        "@chip",
+        "This process will move the ART cache (from /data/dalvik-cache folder) for system apps back to /system, freeing-up space on /data." + 
+          "\n\n\n" +
+          "<b>Useful when:</b>\n" + 
+          "    <*> Installing a 'deodexed' ROM (e.g. Xiaomi.eu - be sure to boot the ROM first before running this tool so the cache can actually generate!)</*>" +
+          "    <*> After you have installed Xposed (causing a rebuild of ART cache - again, make sure you boot the ROM first)</*>" +
+          "\n\n\n" + 
+          "Typically this can free up half a gigabyte on /data, re-utilizing the wasted space on system. System will be verified for enough free space."
+    );
+endif;
+
+#########
+## Icon Modder
+#########
+#if prop("choice_main.prop","selected")=="4" then
+#    # NB ~~~ eval(read("/tmp/other_aroma_script.edify"));
+#    ini_set("text_next", "Return  ");
+#    ini_set("icon_next", "@home");
+#    textbox(
+#        "Icon Modder",
+#        "All your icon modding needs!",
+#        "@brush",
+#        "Coming next version, sorry ;) I am tired of icon packs having missing icons, and having to mod/repack the icon packs with my own changes every time they're updated... so I'm going to make my own tool to make it easier!" + 
+#          "\n\n\n" +
+#          "<b>Features will include:</b>\n" + 
+#          "    <*> Browse for a downloaded MTZ file and install it's icons to the system (no need for Designer account)</*>" +
+#          "    <*> Copy any detected 'unthemed' icons to storage, allowing you to replace them with your own additions which will then be injected into the system - acts as an overlay to the MTZ icon pack</*>" +
+#          "    <*> Generate icon pack APK from MTZ/override icons for use in Nova/ADW/Go/etc.</*>" +
+#          "    <*> Remove icon mask (the "squircle" frame placed behind app icons)</*>" +
+#          "\n\n\n" + 
+#          "That might sound a bit confusing at first, but don't worry - it will make more sense once it's actually implemented."
+#    );
+#    goto("start");
+#endif;
+
+#########
+## Changelog
+#########
+if prop("choice_main.prop","selected")=="4" then
     ini_set("text_next", "Return  ");
     ini_set("icon_next", "@home");
     textbox(
@@ -262,7 +305,7 @@ endif;
 #########
 ## Exit
 #########
-if prop("choice_main.prop","selected")=="4" then
+if prop("choice_main.prop","selected")=="5" then
     exit("");
 endif;
 

@@ -240,6 +240,49 @@ zip_extract_dir() {
     rm -rf "$3/$basedir"
 } 
 
+processDexDir() {
+    type=$1
+    
+    # split the file into $n tokens
+    file=$2
+    IFS_OLD=$IFS
+    IFS='@'
+    set $file
+    IFS=$IFS_OLD
+    
+    
+    # verify the dex is for a system APK
+    if [ "$1" != "system" ]; then
+        continue
+    fi
+    
+    if [ -f "/system/$2/$3/$4" ]; then
+        # app/priv-app/plugin (and maybe other OEM/ODM stuff)
+        dexName=${4%.*}
+        #echo " - /system/$2/$3/oat/$type/$dexName.odex..."
+        mkdir -p "/system/$2/$3/oat/$type"
+        mv "/data/dalvik-cache/$type/$file" "/system/$2/$3/oat/$type/$dexName.odex"
+    fi
+    
+    if [ "$2" == "framework" ]; then
+        if [ -f "/system/$2/$3" ]; then
+            # framework jar's
+            dexName=${3%.*}
+            #echo " - /system/framework/oat/$type/$dexName.odex..."
+            mkdir -p "/system/framework/oat/$type"
+            mv "/data/dalvik-cache/$type/$file" "/system/framework/oat/$type/$dexName.odex"
+        fi
+        
+        # DISABLED - breaks stuff, leaving on data is fine
+        #if [ "$3" == "boot.art" ] || [ "$3" == "boot.oat" ]; then
+            # bootclass
+        #    echo " - /system/framework/$type/$3..."
+        #    mkdir -p "/system/framework/$type"
+        #    mv "/data/dalvik-cache/$type/$file" "/system/framework/$type/$3"
+        #fi
+    fi
+}
+
 ## end methods
 
 ###########################
@@ -251,6 +294,53 @@ ui_print " ";
 
 export choice_main=`file_getprop /tmp/aroma/choice_main.prop selected`;
 export device1=`file_getprop /tmp/anykernel/anykernel.prop device1`;
+
+## non-kernel tasks first
+if [ "$choice_main" == "3" ]; then
+    ui_print "[#] Purging old cache files from /system (if any)..."
+    for app in $(ls /system/app/); do
+        for entry in $(ls /system/app/$app); do
+            rm -rf "/system/app/$app/oat"
+        done
+    done
+    for privapp in $(ls /system/priv-app/); do
+        for entry in $(ls /system/priv-app/$privapp); do
+            rm -rf "/system/priv-app/$privapp/oat"
+        done
+    done
+    #rm -rf /system/framework/arm
+    #rm -rf /system/framework/arm64
+    rm -rf /system/framework/oat
+
+    dexSize=$(du -sk /data/dalvik-cache/ | awk '{print $1}')
+    # add 20MB to the dexSize to keep system from being completely full
+    dexSize=$((dexSize + 20480))
+    systemFree=$(df -Pk /system | tail -1 | awk '{print $4}')
+    ui_print "[i] Total size of dalvik-cache is $((dexSize / 1024)) MB"
+    ui_print "[i] Free space on /system is $((systemFree / 1024)) MB"
+    if [ "$dexSize" -gt "$systemFree" ]; then
+        ui_print "    [!] Not enough free space on /system! Aborting."
+        exit
+    fi
+
+    if [ -d "/data/dalvik-cache/arm" ]; then
+        ui_print "[#] Moving arm odex files..."
+        for file in $(ls /data/dalvik-cache/arm); do
+            processDexDir "arm" $file
+        done
+    fi
+
+    if [ -d "/data/dalvik-cache/arm64" ]; then
+        ui_print "[#] Moving arm64 odex files..."
+        for file in $(ls /data/dalvik-cache/arm64); do
+            processDexDir "arm64" $file
+        done
+    fi
+
+    ui_print "[i] Finished!"
+    exit 0
+fi
+
 
 ui_print "[#] Extracting kernel...";
 show_progress "0.2" "-1500";
