@@ -607,8 +607,12 @@ if [ "$choice_main" == "1" ]; then
     ### install
     ui_print " ";
     show_progress "0.2" "-1000"
+    
     ui_print "[#] Extract new /system files...";
-    unzip -o "$ZIP" "system/*" -d "/";
+    if [ "$(file_getprop /tmp/aroma/install_additions.prop googleapps)" == "1" ]; then
+        ui_print "    [#] Google Apps...";
+        zip_extract_dir "$ZIP" "system_googleapps" "/system/"
+    fi
     
     # additions
     ui_print "    [#] Additions/replacements...";
