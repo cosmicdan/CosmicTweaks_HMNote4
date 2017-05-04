@@ -1,3 +1,7 @@
 Credits and thanks :
- - Xiaomi.eu community for some translated/globalized resources
+ - asusm930 for some useful tweaks
+ - YashdSaraf for his BusyBox installer script
+ - phhusson for his sepolicy-injector builds & scripts used in his Superuser (I used them as reference for injecting init.d support)
+ - osm0sis for AnyKernel2, it's totally awesome
+ - Xiaomi.eu ROM's and community for some tweak references and some translated/globalized resources
  - icons8.com for Aroma icons
